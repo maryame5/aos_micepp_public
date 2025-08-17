@@ -11,8 +11,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: '/auth/login',
-        pathMatch: 'full'
+        loadComponent: () => import('./pages/public/home/home.component').then(m => m.HomeComponent)
       },
       {
         path: 'services',
@@ -51,7 +50,6 @@ export const routes: Routes = [
     path: 'agent',
     loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     canActivate: [AuthGuard],
-    data: { roles: [UserRole.AGENT] },
     children: [
       {
         path: 'dashboard',
@@ -89,51 +87,7 @@ export const routes: Routes = [
     ]
   },
 
-  // Admin routes
-  {
-    path: 'admin',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
-    canActivate: [AuthGuard],
-    data: { roles: [UserRole.ADMIN, UserRole.SUPPORT] },
-    children: [
-      {
-        path: 'dashboard',
-        loadComponent: () => import('./pages/admin/dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
-      },
-      {
-        path: 'users',
-        loadComponent: () => import('./pages/admin/users/admin-users.component').then(m => m.AdminUsersComponent),
-        canActivate: [AuthGuard],
-        data: { roles: [UserRole.ADMIN] }
-      },
-      {
-        path: 'requests',
-        loadComponent: () => import('./pages/admin/requests/admin-requests.component').then(m => m.AdminRequestsComponent)
-      },
-      {
-        path: 'complaints',
-        loadComponent: () => import('./pages/admin/complaints/admin-complaints.component').then(m => m.AdminComplaintsComponent)
-      },
-      {
-        path: 'services',
-        loadComponent: () => import('./pages/admin/services/admin-services.component').then(m => m.AdminServicesComponent),
-        canActivate: [AuthGuard],
-        data: { roles: [UserRole.ADMIN] }
-      },
-      {
-        path: 'news',
-        loadComponent: () => import('./pages/admin/news/admin-news.component').then(m => m.AdminNewsComponent),
-        canActivate: [AuthGuard],
-        data: { roles: [UserRole.ADMIN] }
-      },
-      {
-        path: '',
-        redirectTo: 'dashboard',
-        pathMatch: 'full'
-      }
-    ]
-  },
-
+  
   // Error routes
   {
     path: 'unauthorized',

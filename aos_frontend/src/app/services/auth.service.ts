@@ -23,6 +23,9 @@ export class AuthService {
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<any>(`${this.API_URL}/login`, credentials).pipe(
       map(response => ({
+        id: response.userId,
+        firstName: response.FirstName,
+        lastName: response.LastName,
         token: response.token,
         userType: response.userType as UserRole,
         email: response.email,
@@ -35,11 +38,9 @@ export class AuthService {
           firstName: response.firstName,
           lastName: response.lastName,
           role: response.userType,
-
-          createdAt: new Date(), // Current timestamp
-          updatedAt: new Date(), // Current timestamp
-          department: 'N/A' // Default value
-          ,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          department: 'N/A',
           isActive: false
         };
         localStorage.setItem(this.TOKEN_KEY, response.token);

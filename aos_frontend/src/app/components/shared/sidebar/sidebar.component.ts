@@ -195,78 +195,35 @@ export class SidebarComponent implements OnInit {
       label: 'Tableau de bord',
       icon: 'dashboard',
       route: '/agent/dashboard',
-      roles: [UserRole.AGENT]
+      roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT]
     },
     {
       label: 'Mes demandes',
       icon: 'request_page',
       route: '/agent/requests',
-      roles: [UserRole.AGENT]
+      roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT]
     },
     {
       label: 'Nouvelle demande',
       icon: 'add_circle',
       route: '/agent/new-request',
-      roles: [UserRole.AGENT]
+      roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT]
     },
     {
       label: 'Mes réclamations',
       icon: 'report_problem',
       route: '/agent/complaints',
-      roles: [UserRole.AGENT]
+      roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT]
     },
     {
       label: 'Documents',
       icon: 'description',
       route: '/agent/documents',
-      roles: [UserRole.AGENT]
+      roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT]
     },
 
-    // Admin/Support menu items
-    {
-      label: 'Tableau de bord',
-      icon: 'dashboard',
-      route: '/admin/dashboard',
-      roles: [UserRole.ADMIN, UserRole.SUPPORT]
-    },
-    {
-      label: 'Gestion',
-      icon: 'settings',
-      route: '/admin',
-      roles: [UserRole.ADMIN, UserRole.SUPPORT],
-      children: [
-        {
-          label: 'Utilisateurs',
-          icon: 'people',
-          route: '/admin/users',
-          roles: [UserRole.ADMIN]
-        },
-        {
-          label: 'Demandes',
-          icon: 'inbox',
-          route: '/admin/requests',
-          roles: [UserRole.ADMIN, UserRole.SUPPORT]
-        },
-        {
-          label: 'Réclamations',
-          icon: 'support_agent',
-          route: '/admin/complaints',
-          roles: [UserRole.ADMIN, UserRole.SUPPORT]
-        },
-        {
-          label: 'Services',
-          icon: 'business_center',
-          route: '/admin/services',
-          roles: [UserRole.ADMIN]
-        },
-        {
-          label: 'Actualités',
-          icon: 'article',
-          route: '/admin/news',
-          roles: [UserRole.ADMIN]
-        }
-      ]
-    }
+    
+   
   ];
 
   constructor(

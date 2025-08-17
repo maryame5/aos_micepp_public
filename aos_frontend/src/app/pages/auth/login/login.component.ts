@@ -357,7 +357,7 @@ export class LoginComponent implements OnInit {
           if (response.mustChangePassword) {
             this.router.navigate(['/auth/change-password']);
           } else {
-            this.redirectUser(response.userType);
+            this.router.navigate(['/agent/dashboard']);
           }
         },
         error: (error) => {
@@ -390,18 +390,6 @@ export class LoginComponent implements OnInit {
   }
 
   private redirectUser(role: string): void {
-    switch (role) {
-      case 'ADMIN':
-        this.router.navigate(['/admin/dashboard']);
-        break;
-      case 'SUPPORT':
-        this.router.navigate(['/agent/dashboard']);
-        break;
-      case 'AGENT':
-        this.router.navigate(['/agent/dashboard']);
-        break;
-      default:
-        this.router.navigate(['/']);
-    }
+    this.router.navigate(['/agent/dashboard']);
   }
 }
