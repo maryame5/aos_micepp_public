@@ -19,8 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class PasswordChangeService {
 
     private final UtilisateurRepository userRepository;
-    private final AdminRepository adminRepository;
-    private final SupportRepository supportRepository;
+
     private final PasswordEncoder passwordEncoder;
 
 

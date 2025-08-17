@@ -241,14 +241,6 @@ export class ChangePasswordComponent implements OnInit {
   }
 
   private redirectUser(role: string | undefined): void {
-    switch (role) {
-      case 'ADMIN':
-        this.router.navigate(['/admin/dashboard']);
-        break;
-      case 'SUPPORT':
-        this.router.navigate(['/agent/dashboard']);
-        break;
-      default:
-        this.router.navigate(['/404']);
+      this.router.navigate(['/agent/dashboard']);
     }
-  }}
+  }

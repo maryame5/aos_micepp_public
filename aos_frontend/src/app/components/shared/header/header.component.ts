@@ -215,10 +215,8 @@ export class HeaderComponent implements OnInit {
   }
 
   navigateToProfile(): void {
-    if (this.currentUser?.role === 'AGENT') {
+    if (this.currentUser?.role === 'AGENT' || this.currentUser?.role === 'ADMIN' || this.currentUser?.role === 'SUPPORT') {
       this.router.navigate(['/agent/profile']);
-    } else {
-      this.router.navigate(['/admin/profile']);
     }
   }
 
