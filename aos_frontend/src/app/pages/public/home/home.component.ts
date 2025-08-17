@@ -363,7 +363,9 @@ export class HomeComponent implements OnInit {
 
   constructor() {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    // Initialisation des données si nécessaire
+  }
 
   nextSlide() {
     this.currentSlide = (this.currentSlide + 1) % this.totalSlides;

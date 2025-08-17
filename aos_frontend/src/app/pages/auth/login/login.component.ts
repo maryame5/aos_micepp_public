@@ -349,6 +349,7 @@ export class LoginComponent implements OnInit {
     if (this.loginForm.valid && !this.isLoading) {
       this.isLoading = true;
       const credentials = this.loginForm.value;
+      console.log('Attempting login with:', credentials);
 
       this.authService.login(credentials).subscribe({
         next: (response) => {
@@ -390,6 +391,7 @@ export class LoginComponent implements OnInit {
   }
 
   private redirectUser(role: string): void {
+    console.log("role",role);
     this.router.navigate(['/agent/dashboard']);
   }
 }
