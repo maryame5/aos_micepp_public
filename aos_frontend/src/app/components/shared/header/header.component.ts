@@ -11,6 +11,7 @@ import { LanguageService } from '../../../services/language.service';
 import { User } from '../../../models/user.model';
 import { Router } from '@angular/router';
 import { MatListModule } from "@angular/material/list";
+import { SidebarComponent } from "../sidebar/sidebar.component";
 
 @Component({
   selector: 'app-header',
@@ -28,12 +29,14 @@ import { MatListModule } from "@angular/material/list";
   template: `
     <mat-toolbar class="header-toolbar">
       <button mat-icon-button (click)="toggleSidebar.emit()" class="menu-button">
+
         <mat-icon>menu</mat-icon>
+       
       </button>
+      
 
       <div class="header-title">
-        <h1 class="text-xl font-semibold text-primary-700">AOS MICEPP</h1>
-        <span class="text-sm text-gray-500">{{ getWelcomeMessage() }}</span>
+        <h1 class="text-xl font-semibold text-primary-700 ">AOS MICEPP</h1>
       </div>
 
       <div class="header-actions">
@@ -58,13 +61,9 @@ import { MatListModule } from "@angular/material/list";
 
         <!-- User Menu -->
         <button mat-button [matMenuTriggerFor]="userMenu" class="user-menu-btn" *ngIf="currentUser">
-          <div class="user-avatar">
-            <mat-icon>account_circle</mat-icon>
-          </div>
           <div class="user-info" [class.rtl]="isRTL()">
             <span class="user-name">{{ currentUser.firstName }} {{ currentUser.lastName }}</span>
-            <span class="user-role">{{ getRoleLabel(currentUser.role) }}</span>
-          </div>
+              </div>
           <mat-icon>arrow_drop_down</mat-icon>
         </button>
         <mat-menu #userMenu="matMenu">
@@ -102,6 +101,8 @@ import { MatListModule } from "@angular/material/list";
       display: flex;
       flex-direction: column;
       align-items: flex-start;
+      
+      
     }
 
     .header-actions {

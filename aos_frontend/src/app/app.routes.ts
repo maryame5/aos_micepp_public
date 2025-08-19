@@ -50,34 +50,42 @@ export const routes: Routes = [
     path: 'agent',
     loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     canActivate: [AuthGuard],
+    data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] },
     children: [
       {
         path: 'dashboard',
-        loadComponent: () => import('./pages/agent/dashboard/agent-dashboard.component').then(m => m.AgentDashboardComponent)
+        loadComponent: () => import('./pages/agent/dashboard/agent-dashboard.component').then(m => m.AgentDashboardComponent),
+        data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },
       {
         path: 'requests',
-        loadComponent: () => import('./pages/agent/requests/agent-requests.component').then(m => m.AgentRequestsComponent)
+        loadComponent: () => import('./pages/agent/requests/agent-requests.component').then(m => m.AgentRequestsComponent),
+        data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },
       {
         path: 'requests/:id',
-        loadComponent: () => import('./pages/agent/request-detail/request-detail.component').then(m => m.RequestDetailComponent)
+        loadComponent: () => import('./pages/agent/request-detail/request-detail.component').then(m => m.RequestDetailComponent),
+        data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },
       {
         path: 'new-request',
-        loadComponent: () => import('./pages/agent/new-request/new-request.component').then(m => m.NewRequestComponent)
+        loadComponent: () => import('./pages/agent/new-request/new-request.component').then(m => m.NewRequestComponent),
+        data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },
       {
         path: 'complaints',
-        loadComponent: () => import('./pages/agent/complaints/agent-complaints.component').then(m => m.AgentComplaintsComponent)
+        loadComponent: () => import('./pages/agent/complaints/agent-complaints.component').then(m => m.AgentComplaintsComponent),
+        data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },
       {
         path: 'documents',
-        loadComponent: () => import('./pages/agent/documents/agent-documents.component').then(m => m.AgentDocumentsComponent)
+        loadComponent: () => import('./pages/agent/documents/agent-documents.component').then(m => m.AgentDocumentsComponent),
+        data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },
       {
         path: 'profile',
-        loadComponent: () => import('./pages/agent/profile/agent-profile.component').then(m => m.AgentProfileComponent)
+        loadComponent: () => import('./pages/agent/profile/agent-profile.component').then(m => m.AgentProfileComponent),
+        data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },
       {
         path: '',

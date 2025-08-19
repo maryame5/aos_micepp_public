@@ -12,36 +12,70 @@ export class LanguageService {
   private readonly LANGUAGE_KEY = 'aos_language';
 
   constructor(private translate: TranslateService) {
-    this.initializeLanguage();
+    try {
+      this.initializeLanguage();
+    } catch (error) {
+      console.error('Error initializing language service:', error);
+      // Fallback to French
+      this.currentLanguageSubject.next('fr');
+    }
   }
 
   private initializeLanguage(): void {
-    const savedLanguage = localStorage.getItem(this.LANGUAGE_KEY) || 'fr';
-    this.setLanguage(savedLanguage);
+    try {
+      const savedLanguage = localStorage.getItem(this.LANGUAGE_KEY) || 'fr';
+      this.setLanguage(savedLanguage);
+    } catch (error) {
+      console.error('Error initializing language:', error);
+      this.currentLanguageSubject.next('fr');
+    }
   }
 
   setLanguage(language: string): void {
-    this.translate.use(language);
-    this.currentLanguageSubject.next(language);
-    localStorage.setItem(this.LANGUAGE_KEY, language);
-    
-    // Set document direction for RTL languages
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
+    try {
+      this.translate.use(language);
+      this.currentLanguageSubject.next(language);
+      localStorage.setItem(this.LANGUAGE_KEY, language);
+      
+      // Set document direction for RTL languages
+      document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+      document.documentElement.lang = language;
+    } catch (error) {
+      console.error('Error setting language:', error);
+      // Fallback to French
+      this.currentLanguageSubject.next('fr');
+    }
   }
 
   getCurrentLanguage(): string {
-    return this.currentLanguageSubject.value;
+    try {
+      return this.currentLanguageSubject.value;
+    } catch (error) {
+      console.error('Error getting current language:', error);
+      return 'fr';
+    }
   }
 
   isRTL(): boolean {
-    return this.getCurrentLanguage() === 'ar';
+    try {
+      return this.getCurrentLanguage() === 'ar';
+    } catch (error) {
+      console.error('Error checking RTL:', error);
+      return false;
+    }
   }
 
   getAvailableLanguages(): Array<{code: string, name: string, flag: string}> {
-    return [
-      { code: 'fr', name: 'Français', flag: '🇫🇷' },
-      { code: 'ar', name: 'العربية', flag: '🇲🇦' }
-    ];
+    try {
+      return [
+        { code: 'fr', name: 'Français', flag: '🇫🇷' },
+        { code: 'ar', name: 'العربية', flag: '🇲🇦' }
+      ];
+    } catch (error) {
+      console.error('Error getting available languages:', error);
+      return [
+        { code: 'fr', name: 'Français', flag: '🇫🇷' }
+      ];
+    }
   }
 }

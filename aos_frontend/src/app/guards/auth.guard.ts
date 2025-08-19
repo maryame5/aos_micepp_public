@@ -13,20 +13,31 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   canActivate(route: ActivatedRouteSnapshot): boolean {
-    if (!this.authService.isAuthenticated()) {
+    try {
+      if (!this.authService.isAuthenticated()) {
+        this.router.navigate(['/auth/login']);
+        return false;
+      }
+
+      const requiredRoles = route.data['roles'] as UserRole[];
+      console.log('Required roles:', requiredRoles);
+      
+      const currentUser = this.authService.getCurrentUser();
+      console.log('Current user:', currentUser);
+
+      if (requiredRoles && requiredRoles.length > 0) {
+        if (!this.authService.hasAnyRole(requiredRoles)) {
+          console.log('User does not have required roles');
+          this.router.navigate(['/unauthorized']);
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in AuthGuard:', error);
       this.router.navigate(['/auth/login']);
       return false;
     }
-
-    const requiredRoles = route.data['roles'] as UserRole[];
-    console.log('Required roles:', requiredRoles);
-    console.log('User roles:', this.authService.hasRole);
-
-    if (requiredRoles && !this.authService.hasAnyRole(requiredRoles)) {
-      this.router.navigate(['/unauthorized']);
-      return false;
-    }
-
-    return true;
   }
 }
