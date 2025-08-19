@@ -233,27 +233,40 @@ export class SidebarComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.authService.currentUser$.subscribe(user => {
-      this.currentUser = user;
-    });
+    try {
+      this.authService.currentUser$.subscribe(user => {
+        this.currentUser = user;
+      });
+    } catch (error) {
+      console.error('Error initializing sidebar:', error);
+    }
   }
 
   getMenuItems(): MenuItem[] {
-    return this.menuItems.filter(item => {
-      if (!item.roles) return true;
-      if (!this.currentUser) return false;
-      return item.roles.includes(this.currentUser.role);
-    }).map(item => ({
-      ...item,
-      children: item.children?.filter(child => {
-        if (!child.roles) return true;
+    try {
+      return this.menuItems.filter(item => {
+        if (!item.roles) return true;
         if (!this.currentUser) return false;
-        return child.roles.includes(this.currentUser.role);
-      })
-    }));
+        return item.roles.includes(this.currentUser.role);
+      }).map(item => ({
+        ...item,
+        children: item.children?.filter(child => {
+          if (!child.roles) return true;
+          if (!this.currentUser) return false;
+          return child.roles.includes(this.currentUser.role);
+        })
+      }));
+    } catch (error) {
+      console.error('Error getting menu items:', error);
+      return [];
+    }
   }
 
   isRTL(): boolean {
-    return this.languageService.isRTL();
+    try {
+      return this.languageService.isRTL();
+    } catch (error) {
+      return false;
+    }
   }
 }

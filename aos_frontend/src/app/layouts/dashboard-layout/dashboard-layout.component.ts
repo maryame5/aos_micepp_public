@@ -1,29 +1,23 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
+import { HeaderComponent } from "../../components/shared/header/header.component";
 
 @Component({
   selector: 'app-dashboard-layout',
   standalone: true,
   imports: [
     CommonModule,
-    RouterOutlet
-  ],
+    RouterOutlet,
+    HeaderComponent
+],
   template: `
     <div class="dashboard-layout">
-      <header class="dashboard-header">
-        <div class="header-content">
-          <div class="logo">
-            <div class="logo-icon">🏢</div>
-            <h1>AOS MICEPP</h1>
-          </div>
-          <nav class="header-nav">
-            <a href="/" class="nav-link">Accueil</a>
-            <a href="/services" class="nav-link">Services</a>
-            <a href="/contact" class="nav-link">Contact</a>
-          </nav>
-        </div>
-      </header>
+     
+      <app-header>
+        
+      </app-header>
+      
       
       <main class="dashboard-main">
         <router-outlet></router-outlet>
