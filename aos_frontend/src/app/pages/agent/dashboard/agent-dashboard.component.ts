@@ -142,7 +142,7 @@ import { User } from '../../../models/user.model';
                     <div class="action-icon">👤</div>
                     <span>Mon profil</span>
                   </button>
-                  <button class="quick-action-btn" routerLink="/services">
+                  <button class="quick-action-btn" routerLink="/agent/services">
                     <div class="action-icon">ℹ️</div>
                     <span>Services</span>
                   </button>

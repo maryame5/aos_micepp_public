@@ -14,7 +14,7 @@ export class AuthService {
   private readonly TOKEN_KEY = 'aos_token';
   private readonly USER_KEY = 'aos_user';
   private readonly MUST_CHANGE_PASSWORD_KEY = 'mustChangePassword';
-  private readonly API_URL =  'http://localhost:8089/AOS_MICEPP/auth';
+  private readonly API_URL =  'http://localhost:8090/AOS_MICEPP/auth';
 
   constructor(private http: HttpClient) {
     this.loadUserFromStorage();

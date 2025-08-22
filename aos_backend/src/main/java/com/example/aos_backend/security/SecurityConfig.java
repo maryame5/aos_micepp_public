@@ -1,7 +1,5 @@
 package com.example.aos_backend.security;
-
 import java.util.List;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,7 +18,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
 import com.example.aos_backend.Repository.UtilisateurRepository;
 import com.example.aos_backend.Service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +27,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @RequiredArgsConstructor
 @EnableMethodSecurity(securedEnabled = true, prePostEnabled = true)
 public class SecurityConfig {
-
     private final JwtFilter jwtAuthFilter ;
     private final UserDetailsServiceImpl userDetailsService ;
     private final UtilisateurRepository utilisateurRepository;
@@ -50,6 +46,7 @@ public class SecurityConfig {
         return username -> utilisateurRepository.findByEmail(username)
             .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
+    
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -66,8 +63,13 @@ public class SecurityConfig {
                         "/configuration/security",
                         "/swagger-ui/**",
                         "/webjars/**",
-                        "/swagger-ui.html"
+                        "/swagger-ui.html",
+                        "/api/services",
+                        "/api/services/**",
+                        "/api/test",
+                        "/api/test/**"
                     ).permitAll()
+                    
                     .anyRequest().authenticated()
             )
             .sessionManagement(session ->
@@ -81,7 +83,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200", "http://localhost"));
+        configuration.setAllowedOrigins(List.of("http://localhost:4201", "http://localhost"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

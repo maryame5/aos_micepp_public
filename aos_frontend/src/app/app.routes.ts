@@ -88,6 +88,14 @@ export const routes: Routes = [
         data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },
       {
+        
+        path: 'services',
+        loadComponent: () => import('./pages/public/services/services.component').then(m => m.ServicesComponent)
+         
+      
+
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full'

@@ -1,3 +1,4 @@
+
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -12,6 +13,7 @@ import { MatStepperModule } from '@angular/material/stepper';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../components/shared/page-header/page-header.component';
 import { RequestService } from '../../../services/request.service';
+import { DemandeService, DemandeRequest } from '../../../services/demande.service';
 import { AuthService } from '../../../services/auth.service';
 import { Service, RequestPriority } from '../../../models/request.model';
 
@@ -70,7 +72,7 @@ import { Service, RequestPriority } from '../../../models/request.model';
                     <h4>Description du service</h4>
                     <p>{{ selectedService.description }}</p>
                     
-                    <div class="required-documents" *ngIf="selectedService.requiredDocuments.length > 0">
+                    <div class="required-documents" *ngIf="selectedService.requiredDocuments && selectedService.requiredDocuments.length > 0">
                       <h4>Documents requis</h4>
                       <ul>
                         <li *ngFor="let doc of selectedService.requiredDocuments">{{ doc }}</li>
@@ -97,15 +99,7 @@ import { Service, RequestPriority } from '../../../models/request.model';
               <mat-card-content>
                 <form [formGroup]="requestForm" class="request-form">
                   <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Titre de la demande</mat-label>
-                    <input matInput formControlName="title" placeholder="Ex: Demande de congé exceptionnel">
-                    <mat-error *ngIf="requestForm.get('title')?.hasError('required')">
-                      Le titre est requis
-                    </mat-error>
-                  </mat-form-field>
-
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Description détaillée</mat-label>
+                    <mat-label>Description générale</mat-label>
                     <textarea 
                       matInput 
                       formControlName="description" 
@@ -116,19 +110,9 @@ import { Service, RequestPriority } from '../../../models/request.model';
                     </mat-error>
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Priorité</mat-label>
-                    <mat-select formControlName="priority">
-                      <mat-option value="LOW">Faible</mat-option>
-                      <mat-option value="MEDIUM">Normale</mat-option>
-                      <mat-option value="HIGH">Élevée</mat-option>
-                      <mat-option value="URGENT">Urgente</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-
                   <!-- Dynamic form fields based on selected service -->
-                  <div class="dynamic-fields" *ngIf="selectedService">
-                    <h4>Informations spécifiques</h4>
+                  <div class="dynamic-fields" *ngIf="selectedService && selectedService.formFields && selectedService.formFields.length > 0">
+                    <h4>Informations spécifiques au service</h4>
                     <div *ngFor="let field of selectedService.formFields" class="dynamic-field">
                       <mat-form-field appearance="outline" class="full-width">
                         <mat-label>{{ field.label }}</mat-label>
@@ -211,7 +195,7 @@ import { Service, RequestPriority } from '../../../models/request.model';
                   </div>
                 </div>
 
-                <div class="required-docs-info" *ngIf="selectedService && selectedService.requiredDocuments.length > 0">
+                <div class="required-docs-info" *ngIf="selectedService && selectedService.requiredDocuments && selectedService.requiredDocuments.length > 0">
                   <h4>Documents requis pour ce service :</h4>
                   <ul>
                     <li *ngFor="let doc of selectedService.requiredDocuments">{{ doc }}</li>
@@ -242,18 +226,14 @@ import { Service, RequestPriority } from '../../../models/request.model';
                   </div>
 
                   <div class="review-item">
-                    <h4>Titre</h4>
-                    <p>{{ requestForm.get('title')?.value }}</p>
-                  </div>
-
-                  <div class="review-item">
                     <h4>Description</h4>
                     <p>{{ requestForm.get('description')?.value }}</p>
                   </div>
 
-                  <div class="review-item">
-                    <h4>Priorité</h4>
-                    <p>{{ getPriorityLabel(requestForm.get('priority')?.value) }}</p>
+                  <!-- Show dynamic field values -->
+                  <div class="review-item" *ngFor="let field of selectedService?.formFields || []">
+                    <h4>{{ field.label }}</h4>
+                    <p>{{ requestForm.get(field.name)?.value || 'Non spécifié' }}</p>
                   </div>
 
                   <div class="review-item" *ngIf="uploadedFiles.length > 0">
@@ -338,6 +318,7 @@ import { Service, RequestPriority } from '../../../models/request.model';
     .dynamic-fields h4 {
       margin: 0 0 1rem 0;
       color: #374151;
+      font-weight: 600;
     }
 
     .dynamic-field {
@@ -457,6 +438,7 @@ export class NewRequestComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private requestService: RequestService,
+    private demandeService: DemandeService,
     private authService: AuthService,
     private router: Router,
     private snackBar: MatSnackBar
@@ -466,9 +448,7 @@ export class NewRequestComponent implements OnInit {
     });
 
     this.requestForm = this.fb.group({
-      title: ['', Validators.required],
-      description: ['', Validators.required],
-      priority: ['MEDIUM', Validators.required]
+      description: ['', Validators.required]
     });
   }
 
@@ -477,25 +457,63 @@ export class NewRequestComponent implements OnInit {
   }
 
   loadServices(): void {
+    if (!this.authService.isAuthenticated()) {
+      console.error('User not authenticated');
+      this.snackBar.open('Veuillez vous connecter pour accéder aux services', 'Fermer', {
+        duration: 5000,
+        panelClass: ['error-snackbar']
+      });
+      this.router.navigate(['/auth/login']);
+      return;
+    }
+
     this.requestService.getServices().subscribe({
       next: (services) => {
+        console.log('Services loaded:', services);
         this.services = services.filter(s => s.isActive);
       },
       error: (error) => {
         console.error('Error loading services:', error);
+        if (error.status === 401 || error.status === 403) {
+          this.snackBar.open('Session expirée. Veuillez vous reconnecter.', 'Fermer', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+          this.authService.logout();
+          this.router.navigate(['/auth/login']);
+        } else {
+          this.snackBar.open('Erreur lors du chargement des services', 'Fermer', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+        }
       }
     });
   }
 
   onServiceChange(serviceId: string): void {
+    console.log('Service selected:', serviceId);
     this.selectedService = this.services.find(s => s.id === serviceId) || null;
     
     if (this.selectedService) {
-      // Add dynamic form fields
-      this.selectedService.formFields.forEach(field => {
-        const validators = field.required ? [Validators.required] : [];
-        this.requestForm.addControl(field.name, this.fb.control('', validators));
+      console.log('Selected service:', this.selectedService);
+      console.log('Form fields:', this.selectedService.formFields);
+      
+      // Clear existing dynamic fields
+      const currentFields = Object.keys(this.requestForm.controls);
+      currentFields.forEach(field => {
+        if (field !== 'description') {
+          this.requestForm.removeControl(field);
+        }
       });
+      
+      // Add new dynamic form fields
+      if (this.selectedService.formFields && this.selectedService.formFields.length > 0) {
+        this.selectedService.formFields.forEach(field => {
+          const validators = field.required ? [Validators.required] : [];
+          this.requestForm.addControl(field.name, this.fb.control('', validators));
+        });
+      }
     }
   }
 
@@ -518,50 +536,33 @@ export class NewRequestComponent implements OnInit {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  getPriorityLabel(priority: string): string {
-    const labels: Record<string, string> = {
-      'LOW': 'Faible',
-      'MEDIUM': 'Normale',
-      'HIGH': 'Élevée',
-      'URGENT': 'Urgente'
-    };
-    return labels[priority] || priority;
-  }
-
   submitRequest(): void {
     if (this.serviceForm.valid && this.requestForm.valid && !this.isSubmitting) {
       this.isSubmitting = true;
-      const currentUser = this.authService.getCurrentUser();
 
-      if (!currentUser) {
-        this.snackBar.open('Erreur: utilisateur non connecté', 'Fermer', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
-        });
-        this.isSubmitting = false;
-        return;
-      }
-
-      const requestData = {
-        userId: currentUser.id,
-        serviceId: this.serviceForm.value.serviceId,
-        title: this.requestForm.value.title,
-        description: this.requestForm.value.description,
-        priority: this.requestForm.value.priority as RequestPriority,
-        documents: [] // In a real app, upload files first
+      // Préparer les données de la demande
+      const demandeRequest: DemandeRequest = {
+        serviceId: parseInt(this.serviceForm.value.serviceId),
+        commentaire: this.requestForm.value.description,
+        documentsJustificatifs: this.uploadedFiles.map(file => file.name),
+        serviceData: this.getServiceData()
       };
 
-      this.requestService.createRequest(requestData).subscribe({
-        next: (request) => {
+      console.log('Submitting request:', demandeRequest);
+
+      this.demandeService.createDemande(demandeRequest).subscribe({
+        next: (response) => {
           this.isSubmitting = false;
+          console.log('Request created successfully:', response);
           this.snackBar.open('Demande créée avec succès!', 'Fermer', {
             duration: 3000,
             panelClass: ['success-snackbar']
           });
-          this.router.navigate(['/agent/requests', request.id]);
+          this.router.navigate(['/agent/requests']);
         },
         error: (error) => {
           this.isSubmitting = false;
+          console.error('Erreur lors de la création de la demande:', error);
           this.snackBar.open('Erreur lors de la création de la demande', 'Fermer', {
             duration: 5000,
             panelClass: ['error-snackbar']
@@ -569,5 +570,22 @@ export class NewRequestComponent implements OnInit {
         }
       });
     }
+  }
+
+  private getServiceData(): { [key: string]: any } {
+    const serviceData: { [key: string]: any } = {};
+    
+    if (this.selectedService && this.selectedService.formFields) {
+      // Ajouter les champs dynamiques du formulaire
+      this.selectedService.formFields.forEach(field => {
+        const value = this.requestForm.get(field.name)?.value;
+        if (value !== null && value !== undefined && value !== '') {
+          serviceData[field.name] = value;
+        }
+      });
+    }
+    
+    console.log('Service data:', serviceData);
+    return serviceData;
   }
 }

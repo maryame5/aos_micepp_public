@@ -1,6 +1,7 @@
+// agent-requests.component.ts - Version corrigée avec affichage correct des services
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,10 +9,12 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { FormsModule } from '@angular/forms';
 import { PageHeaderComponent } from '../../../components/shared/page-header/page-header.component';
 import { LoadingComponent } from '../../../components/shared/loading/loading.component';
 import { RequestService } from '../../../services/request.service';
+import { DemandeService, Demande } from '../../../services/demande.service';
 import { AuthService } from '../../../services/auth.service';
 import { ServiceRequest, RequestStatus } from '../../../models/request.model';
 
@@ -31,7 +34,7 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
     PageHeaderComponent,
     LoadingComponent,
     MatSelectModule
-],
+  ],
   
   template: `
     <div class="requests-container">
@@ -62,11 +65,10 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
               <mat-label>Statut</mat-label>
               <mat-select [(value)]="selectedStatus" (selectionChange)="applyFilters()">
                 <mat-option value="">Tous les statuts</mat-option>
-                <mat-option value="PENDING">En attente</mat-option>
-                <mat-option value="IN_PROGRESS">En cours</mat-option>
-                <mat-option value="APPROVED">Approuvée</mat-option>
-                <mat-option value="REJECTED">Rejetée</mat-option>
-                <mat-option value="COMPLETED">Terminée</mat-option>
+                <mat-option value="EN_ATTENTE">En attente</mat-option>
+                <mat-option value="EN_COURS">En cours</mat-option>
+                <mat-option value="ACCEPTEE">Acceptée</mat-option>
+                <mat-option value="REFUSEE">Refusée</mat-option>
               </mat-select>
             </mat-form-field>
 
@@ -80,7 +82,7 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
         <div class="stats-grid">
           <div class="stat-card pending">
             <div class="stat-content">
-              <div class="stat-number">{{ getRequestsByStatus('PENDING').length }}</div>
+              <div class="stat-number">{{ getRequestsByStatus('EN_ATTENTE').length }}</div>
               <div class="stat-label">En attente</div>
             </div>
             <mat-icon>hourglass_empty</mat-icon>
@@ -88,7 +90,7 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
 
           <div class="stat-card in-progress">
             <div class="stat-content">
-              <div class="stat-number">{{ getRequestsByStatus('IN_PROGRESS').length }}</div>
+              <div class="stat-number">{{ getRequestsByStatus('EN_COURS').length }}</div>
               <div class="stat-label">En cours</div>
             </div>
             <mat-icon>sync</mat-icon>
@@ -96,7 +98,7 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
 
           <div class="stat-card completed">
             <div class="stat-content">
-              <div class="stat-number">{{ getRequestsByStatus('COMPLETED').length + getRequestsByStatus('APPROVED').length }}</div>
+              <div class="stat-number">{{ getRequestsByStatus('ACCEPTEE').length + getRequestsByStatus('REFUSEE').length }}</div>
               <div class="stat-label">Terminées</div>
             </div>
             <mat-icon>check_circle</mat-icon>
@@ -105,16 +107,16 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
 
         <!-- Requests List -->
         <div class="requests-list" *ngIf="filteredRequests.length > 0; else noRequests">
-          <mat-card class="request-card" *ngFor="let request of filteredRequests">
+          <mat-card class="request-card" *ngFor="let demande of filteredRequests">
             <mat-card-header>
               <div class="request-header-content">
                 <div class="request-title-section">
-                  <mat-card-title>{{ request.title }}</mat-card-title>
-                  <mat-card-subtitle>{{ request.description | slice:0:150 }}...</mat-card-subtitle>
+                  <mat-card-title>{{ demande.service?.nom || 'Service non défini' }}</mat-card-title>
+                  <mat-card-subtitle>{{ demande.commentaire | slice:0:150 }}<span *ngIf="demande.commentaire.length > 150">...</span></mat-card-subtitle>
                 </div>
                 <div class="request-status">
-                  <mat-chip [class]="getStatusClass(request.status)">
-                    {{ getStatusLabel(request.status) }}
+                  <mat-chip [class]="getStatusClass(demande.statut)">
+                    {{ getStatusLabel(demande.statut) }}
                   </mat-chip>
                 </div>
               </div>
@@ -124,37 +126,35 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
               <div class="request-meta">
                 <div class="meta-item">
                   <mat-icon>event</mat-icon>
-                  <span>Créée le {{ request.createdAt | date:'dd/MM/yyyy' }}</span>
+                  <span>Créée le {{ demande.dateSoumission | date:'dd/MM/yyyy' }}</span>
                 </div>
-                <div class="meta-item" *ngIf="request.updatedAt !== request.createdAt">
+                <div class="meta-item" *ngIf="demande.lastModifiedDate && demande.lastModifiedDate !== demande.dateSoumission">
                   <mat-icon>update</mat-icon>
-                  <span>Modifiée le {{ request.updatedAt | date:'dd/MM/yyyy' }}</span>
+                  <span>Modifiée le {{ demande.lastModifiedDate | date:'dd/MM/yyyy' }}</span>
                 </div>
-                <div class="meta-item" *ngIf="request.dueDate">
-                  <mat-icon>schedule</mat-icon>
-                  <span>Échéance: {{ request.dueDate | date:'dd/MM/yyyy' }}</span>
+                <div class="meta-item" *ngIf="demande.documentsJustificatifs && demande.documentsJustificatifs.length > 0">
+                  <mat-icon>attach_file</mat-icon>
+                  <span>{{ demande.documentsJustificatifs.length }} document(s)</span>
                 </div>
-                <div class="meta-item" *ngIf="request.priority">
-                  <mat-icon [class]="getPriorityIconClass(request.priority)">
-                    {{ getPriorityIcon(request.priority) }}
-                  </mat-icon>
-                  <span>{{ getPriorityLabel(request.priority) }}</span>
+                <div class="meta-item">
+                  <mat-icon>category</mat-icon>
+                  <span>ID Service: {{ demande.service?.id }}</span>
                 </div>
               </div>
             </mat-card-content>
 
             <mat-card-actions>
-              <button mat-button [routerLink]="['/agent/requests', request.id]">
+              <button mat-button [routerLink]="['/agent/requests', demande.id]">
                 <mat-icon>visibility</mat-icon>
                 Voir détails
               </button>
-              <button mat-button *ngIf="canEditRequest(request)" color="primary">
+              <button mat-button *ngIf="canEditRequest(demande)" color="primary">
                 <mat-icon>edit</mat-icon>
                 Modifier
               </button>
-              <button mat-button *ngIf="request.documents.length > 0">
+              <button mat-button *ngIf="demande.documentsJustificatifs && demande.documentsJustificatifs.length > 0">
                 <mat-icon>attach_file</mat-icon>
-                Documents ({{ request.documents.length }})
+                Documents ({{ demande.documentsJustificatifs.length }})
               </button>
             </mat-card-actions>
           </mat-card>
@@ -315,22 +315,6 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
       height: 1rem;
     }
 
-    .priority-high {
-      color: #dc2626 !important;
-    }
-
-    .priority-urgent {
-      color: #dc2626 !important;
-    }
-
-    .priority-medium {
-      color: #f59e0b !important;
-    }
-
-    .priority-low {
-      color: #059669 !important;
-    }
-
     .mat-chip.status-pending {
       background-color: #fef3c7 !important;
       color: #92400e !important;
@@ -418,15 +402,18 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
   `]
 })
 export class AgentRequestsComponent implements OnInit {
-  requests: ServiceRequest[] = [];
-  filteredRequests: ServiceRequest[] = [];
+  requests: Demande[] = [];
+  filteredRequests: Demande[] = [];
   isLoading = true;
   searchTerm = '';
   selectedStatus = '';
 
   constructor(
     private requestService: RequestService,
-    private authService: AuthService
+    private demandeService: DemandeService,
+    private authService: AuthService,
+    private router: Router,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -434,29 +421,53 @@ export class AgentRequestsComponent implements OnInit {
   }
 
   loadRequests(): void {
-    const currentUser = this.authService.getCurrentUser();
-    if (currentUser) {
-      this.requestService.getUserRequests(currentUser.id).subscribe({
-        next: (requests) => {
-          this.requests = requests;
-          this.applyFilters();
-          this.isLoading = false;
-        },
-        error: (error) => {
-          console.error('Error loading requests:', error);
-          this.isLoading = false;
-        }
+    // Vérifier si l'utilisateur est authentifié
+    if (!this.authService.isAuthenticated()) {
+      console.error('User not authenticated');
+      this.snackBar.open('Veuillez vous connecter pour accéder à vos demandes', 'Fermer', {
+        duration: 5000,
+        panelClass: ['error-snackbar']
       });
+      this.router.navigate(['/auth/login']);
+      this.isLoading = false;
+      return;
     }
+
+    // Charger les demandes directement depuis DemandeService
+    this.demandeService.getUserDemandes().subscribe({
+      next: (demandes) => {
+        console.log('Demandes loaded:', demandes);
+        this.requests = demandes;
+        this.applyFilters();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading requests:', error);
+        if (error.status === 401 || error.status === 403) {
+          this.snackBar.open('Session expirée. Veuillez vous reconnecter.', 'Fermer', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+          this.authService.logout();
+          this.router.navigate(['/auth/login']);
+        } else {
+          this.snackBar.open('Erreur lors du chargement des demandes', 'Fermer', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+        }
+        this.isLoading = false;
+      }
+    });
   }
 
   applyFilters(): void {
-    this.filteredRequests = this.requests.filter(request => {
+    this.filteredRequests = this.requests.filter(demande => {
       const matchesSearch = !this.searchTerm || 
-        request.title.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        request.description.toLowerCase().includes(this.searchTerm.toLowerCase());
+        demande.commentaire?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        demande.service?.nom?.toLowerCase().includes(this.searchTerm.toLowerCase());
       
-      const matchesStatus = !this.selectedStatus || request.status === this.selectedStatus;
+      const matchesStatus = !this.selectedStatus || demande.statut === this.selectedStatus;
       
       return matchesSearch && matchesStatus;
     });
@@ -472,50 +483,31 @@ export class AgentRequestsComponent implements OnInit {
     return !!this.searchTerm || !!this.selectedStatus;
   }
 
-  getRequestsByStatus(status: string): ServiceRequest[] {
-    return this.requests.filter(req => req.status === status);
+  getRequestsByStatus(status: string): Demande[] {
+    return this.requests.filter(demande => demande.statut === status);
   }
 
-  getStatusLabel(status: RequestStatus): string {
-    const labels: Record<RequestStatus, string> = {
-      [RequestStatus.PENDING]: 'En attente',
-      [RequestStatus.IN_PROGRESS]: 'En cours',
-      [RequestStatus.APPROVED]: 'Approuvée',
-      [RequestStatus.REJECTED]: 'Rejetée',
-      [RequestStatus.COMPLETED]: 'Terminée'
-    };
-    return labels[status];
-  }
-
-  getStatusClass(status: RequestStatus): string {
-    return `status-${status.toLowerCase().replace('_', '-')}`;
-  }
-
-  getPriorityLabel(priority: string): string {
+  getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      'LOW': 'Faible',
-      'MEDIUM': 'Normale',
-      'HIGH': 'Élevée',
-      'URGENT': 'Urgente'
+      'EN_ATTENTE': 'En attente',
+      'EN_COURS': 'En cours',
+      'ACCEPTEE': 'Acceptée',
+      'REFUSEE': 'Refusée'
     };
-    return labels[priority] || priority;
+    return labels[status] || status;
   }
 
-  getPriorityIcon(priority: string): string {
-    const icons: Record<string, string> = {
-      'LOW': 'keyboard_arrow_down',
-      'MEDIUM': 'remove',
-      'HIGH': 'keyboard_arrow_up',
-      'URGENT': 'priority_high'
+  getStatusClass(status: string): string {
+    const classMap: Record<string, string> = {
+      'EN_ATTENTE': 'status-pending',
+      'EN_COURS': 'status-in-progress',
+      'ACCEPTEE': 'status-completed',
+      'REFUSEE': 'status-rejected'
     };
-    return icons[priority] || 'remove';
+    return classMap[status] || 'status-pending';
   }
 
-  getPriorityIconClass(priority: string): string {
-    return `priority-${priority.toLowerCase()}`;
-  }
-
-  canEditRequest(request: ServiceRequest): boolean {
-    return request.status === RequestStatus.PENDING;
+  canEditRequest(demande: Demande): boolean {
+    return demande.statut === 'EN_ATTENTE';
   }
 }

@@ -1,5 +1,7 @@
 package com.example.aos_backend.Controller;
 
+import java.util.logging.ErrorManager;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -38,7 +40,11 @@ public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(response);
     } catch (Exception e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+    } catch (ExceptionInInitializerError e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Login failed");
+
     }
+    
 }
 
 @PostMapping("/change-password")
