@@ -27,11 +27,11 @@ interface MenuItem {
     MatDividerModule
   ],
   template: `
-    <div class="sidebar-container" [class.rtl]="isRTL()">
+    <div class="sidebar-container" [class.rtl]="isRTL()" [class.collapsed]="collapsed">
       <div class="sidebar-header">
         <div class="logo">
           <mat-icon class="logo-icon">account_balance</mat-icon>
-          <span class="logo-text">AOS MICEPP</span>
+          <span class="logo-text" *ngIf="!collapsed">AOS MICEPP</span>
         </div>
       </div>
 
@@ -46,12 +46,12 @@ interface MenuItem {
               routerLinkActive="active"
               class="nav-item">
               <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-              <span matListItemTitle>{{ item.label }}</span>
+              <span matListItemTitle *ngIf="!collapsed">{{ item.label }}</span>
             </mat-list-item>
 
             <!-- Submenu items -->
             <div *ngIf="item.children" class="submenu">
-              <div class="submenu-header">
+              <div class="submenu-header" *ngIf="!collapsed">
                 <mat-icon>{{ item.icon }}</mat-icon>
                 <span>{{ item.label }}</span>
               </div>
@@ -61,7 +61,7 @@ interface MenuItem {
                 routerLinkActive="active"
                 class="nav-item submenu-item">
                 <mat-icon matListItemIcon>{{ child.icon }}</mat-icon>
-                <span matListItemTitle>{{ child.label }}</span>
+                <span matListItemTitle *ngIf="!collapsed">{{ child.label }}</span>
               </mat-list-item>
             </div>
           </div>
@@ -71,15 +71,27 @@ interface MenuItem {
   `,
   styles: [`
     .sidebar-container {
-      height: 100%;
+      height: 100vh;
       background: white;
       border-right: 1px solid #e2e8f0;
       overflow-y: auto;
+      width: 250px;
+      transition: width 0.3s ease;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 999;
     }
 
     .sidebar-container.rtl {
       border-right: none;
       border-left: 1px solid #e2e8f0;
+      left: auto;
+      right: 0;
+    }
+
+    .sidebar-container.collapsed {
+      width: 60px;
     }
 
     .sidebar-header {
@@ -110,7 +122,7 @@ interface MenuItem {
     }
 
     .nav-item {
-      margin: 0.25rem 1rem;
+      margin: 0.25rem 0.5rem;
       border-radius: 8px;
       transition: all 0.3s ease;
       cursor: pointer;
@@ -146,16 +158,23 @@ interface MenuItem {
     }
 
     .submenu-item {
-      padding-left: 3rem !important;
+      padding-left: 2rem !important;
       font-size: 0.875rem;
     }
 
     .rtl .submenu-item {
       padding-left: 1rem !important;
-      padding-right: 3rem !important;
+      padding-right: 2rem !important;
     }
 
     @media (max-width: 768px) {
+      .sidebar-container {
+        width: 200px;
+      }
+      .sidebar-container.collapsed {
+        width: 0;
+        overflow: hidden;
+      }
       .logo-text {
         display: none;
       }
@@ -168,7 +187,6 @@ export class SidebarComponent implements OnInit {
   currentUser: User | null = null;
 
   private menuItems: MenuItem[] = [
-    // Public menu items
     {
       label: 'Accueil',
       icon: 'home',
@@ -189,8 +207,6 @@ export class SidebarComponent implements OnInit {
       icon: 'contact_mail',
       route: '/contact',
     },
-
-    // Agent menu items
     {
       label: 'Tableau de bord',
       icon: 'dashboard',
@@ -220,10 +236,7 @@ export class SidebarComponent implements OnInit {
       icon: 'description',
       route: '/agent/documents',
       roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT]
-    },
-
-    
-   
+    }
   ];
 
   constructor(

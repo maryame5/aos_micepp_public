@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Output, EventEmitter, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,8 +10,7 @@ import { AuthService } from '../../../services/auth.service';
 import { LanguageService } from '../../../services/language.service';
 import { User } from '../../../models/user.model';
 import { Router } from '@angular/router';
-import { MatListModule } from "@angular/material/list";
-import { SidebarComponent } from "../sidebar/sidebar.component";
+import { MatListModule } from '@angular/material/list';
 
 @Component({
   selector: 'app-header',
@@ -25,7 +24,7 @@ import { SidebarComponent } from "../sidebar/sidebar.component";
     MatBadgeModule,
     MatDividerModule,
     MatListModule
-],
+  ],
   template: `
     <mat-toolbar class="header-toolbar">
       <button mat-icon-button (click)="toggleSidebar.emit()" class="menu-button">
@@ -33,10 +32,9 @@ import { SidebarComponent } from "../sidebar/sidebar.component";
         <mat-icon>menu</mat-icon>
        
       </button>
-      
 
       <div class="header-title">
-        <h1 class="text-xl font-semibold text-primary-700 ">AOS MICEPP</h1>
+        <h1 class="text-xl font-semibold text-primary-700">AOS MICEPP</h1>
       </div>
 
       <div class="header-actions">
@@ -63,7 +61,7 @@ import { SidebarComponent } from "../sidebar/sidebar.component";
         <button mat-button [matMenuTriggerFor]="userMenu" class="user-menu-btn" *ngIf="currentUser">
           <div class="user-info" [class.rtl]="isRTL()">
             <span class="user-name">{{ currentUser.firstName }} {{ currentUser.lastName }}</span>
-              </div>
+          </div>
           <mat-icon>arrow_drop_down</mat-icon>
         </button>
         <mat-menu #userMenu="matMenu">
@@ -140,11 +138,6 @@ import { SidebarComponent } from "../sidebar/sidebar.component";
       font-size: 0.875rem;
     }
 
-    .user-role {
-      font-size: 0.75rem;
-      color: #6b7280;
-    }
-
     .language-btn {
       display: flex;
       align-items: center;
@@ -168,7 +161,8 @@ import { SidebarComponent } from "../sidebar/sidebar.component";
 })
 export class HeaderComponent implements OnInit {
   @Output() toggleSidebar = new EventEmitter<void>();
-  
+  @Input() sidebarCollapsed = true; // Added input for sidebar state
+
   currentUser: User | null = null;
   availableLanguages = this.languageService.getAvailableLanguages();
 
@@ -180,15 +174,14 @@ export class HeaderComponent implements OnInit {
 
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(user => {
+      console.log('Current user:', user); // Debug log
       this.currentUser = user;
     });
   }
 
-  getWelcomeMessage(): string {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Bonjour';
-    if (hour < 17) return 'Bon après-midi';
-    return 'Bonsoir';
+  onToggleSidebar(): void {
+    console.log('Toggle sidebar button clicked'); // Debug log
+    this.toggleSidebar.emit();
   }
 
   getCurrentLanguageFlag(): string {
@@ -199,10 +192,13 @@ export class HeaderComponent implements OnInit {
 
   changeLanguage(langCode: string): void {
     this.languageService.setLanguage(langCode);
+    console.log(`Language changed to: ${langCode}`); // Debug log
   }
 
   isRTL(): boolean {
     return this.languageService.isRTL();
+
+    console.log(`Current language is RTL: ${this.isRTL()}`); // Debug log
   }
 
   getRoleLabel(role: string): string {
@@ -212,6 +208,7 @@ export class HeaderComponent implements OnInit {
       'AGENT': 'Agent',
       'VISITOR': 'Visiteur'
     };
+    console.log(`Role label for ${role}: ${roleLabels[role] || role}`); // Debug log
     return roleLabels[role] || role;
   }
 

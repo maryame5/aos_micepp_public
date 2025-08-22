@@ -1,27 +1,43 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { PageHeaderComponent } from '../../../components/shared/page-header/page-header.component';
+import { ServiceInfoService, ServiceInfo } from '../../../services/service-info.service';
+
 
 @Component({
   selector: 'app-services',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, PageHeaderComponent],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, PageHeaderComponent, RouterModule],
   template: `
     <div class="services-page">
       <app-page-header title="Nos Services" subtitle="Découvrez tous les services disponibles" [showActions]="false"></app-page-header>
       
       <div class="services-content">
-        <div class="services-grid">
+        <div class="loading-container" *ngIf="loading">
+          <mat-spinner></mat-spinner>
+          <p>Chargement des services...</p>
+        </div>
+        
+        <div class="error-container" *ngIf="error">
+          <div class="error-message">
+            <mat-icon>error</mat-icon>
+            <p>{{ error }}</p>
+            <button mat-raised-button color="primary" (click)="loadServices()">Réessayer</button>
+          </div>
+        </div>
+        
+        <div class="services-grid" *ngIf="!loading && !error">
           <mat-card class="service-card" *ngFor="let service of services">
             <div class="service-icon">
               <mat-icon>{{ service.icon }}</mat-icon>
             </div>
             <mat-card-header>
               <mat-card-title>{{ service.title }}</mat-card-title>
-              <mat-card-subtitle>{{ service.category }}</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
               <p>{{ service.description }}</p>
@@ -30,8 +46,8 @@ import { PageHeaderComponent } from '../../../components/shared/page-header/page
               </ul>
             </mat-card-content>
             <mat-card-actions>
-              <button mat-raised-button color="primary">Faire une demande</button>
-              <button mat-button>En savoir plus</button>
+              <button mat-raised-button color="primary" routerLink="/agent/new-request">Faire une demande</button>
+              <button mat-button routerLink="/agent/requests/{{service.id}}">En savoir plus</button>
             </mat-card-actions>
           </mat-card>
         </div>
@@ -43,6 +59,45 @@ import { PageHeaderComponent } from '../../../components/shared/page-header/page
       padding: 1rem;
       max-width: 1400px;
       margin: 0 auto;
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 400px;
+      
+      p {
+        margin-top: 1rem;
+        color: #64748b;
+      }
+    }
+
+    .error-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 400px;
+      
+      .error-message {
+        text-align: center;
+        background: #fff;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        
+        mat-icon {
+          font-size: 3rem;
+          color: #e74c3c;
+          margin-bottom: 1rem;
+        }
+        
+        p {
+          color: #e74c3c;
+          margin-bottom: 1rem;
+        }
+      }
     }
 
     .services-grid {
@@ -95,35 +150,36 @@ import { PageHeaderComponent } from '../../../components/shared/page-header/page
     }
   `]
 })
-export class ServicesComponent {
-  services = [
-    {
-      icon: 'business_center',
-      title: 'Congé exceptionnel',
-      category: 'Ressources Humaines',
-      description: 'Demandez un congé exceptionnel pour des raisons personnelles ou familiales.',
-      features: ['Congé maladie', 'Congé familial', 'Congé personnel', 'Suivi en temps réel']
-    },
-    {
-      icon: 'medical_services',
-      title: 'Remboursement médical',
-      category: 'Santé',
-      description: 'Obtenez le remboursement de vos frais médicaux et de santé.',
-      features: ['Consultation médicale', 'Médicaments', 'Analyses médicales', 'Remboursement rapide']
-    },
-    {
-      icon: 'school',
-      title: 'Formation professionnelle',
-      category: 'Formation',
-      description: 'Accédez aux programmes de formation et développement professionnel.',
-      features: ['Formations certifiantes', 'Développement des compétences', 'Formations en ligne', 'Suivi personnalisé']
-    },
-    {
-      icon: 'family_restroom',
-      title: 'Aide sociale',
-      category: 'Social',
-      description: 'Bénéficiez d\'aides sociales pour vous et votre famille.',
-      features: ['Aide financière', 'Support familial', 'Assistance sociale', 'Conseil et orientation']
-    }
-  ];
+export class ServicesComponent implements OnInit {
+  services: ServiceInfo[] = [];
+  loading = true;
+  error: string | null = null;
+
+  constructor(
+    private serviceInfoService: ServiceInfoService,
+   
+  ) { }
+
+  ngOnInit(): void {
+    this.loadServices();
+  }
+
+  
+
+  loadServices(): void {
+    this.loading = true;
+    this.error = null;
+    
+    this.serviceInfoService.getAllServices().subscribe({
+      next: (services) => {
+        this.services = services;
+        this.loading = false;
+      },
+      error: (error) => {
+        this.error = 'Erreur lors du chargement des services';
+        this.loading = false;
+        console.error('Error loading services:', error);
+      }
+    });
+  }
 }

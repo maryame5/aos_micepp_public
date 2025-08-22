@@ -11,6 +11,7 @@ import { ToastrModule } from 'ngx-toastr';
 
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
+import { AuthInterceptor } from './app/interceptors/auth.interceptor';
 
 // Translation loader factory
 export function HttpLoaderFactory(http: HttpClient) {
@@ -21,7 +22,7 @@ bootstrapApplication(AppComponent, {
   providers: [
     provideRouter(routes),
     provideAnimations(),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([AuthInterceptor])),
     importProvidersFrom(
       MatSnackBarModule,
       TranslateModule.forRoot({

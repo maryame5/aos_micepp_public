@@ -10,8 +10,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Getter
-@Setter
+@Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -41,18 +40,14 @@ public class Demande {
     private String documentReponse;
 
     @ManyToOne
-    @JoinColumn(name = "agent_id", nullable = false)
-    private Agent agent;
+    @JoinColumn(name = "utilisateur_id", nullable = false)
+    private Utilisateur utilisateur;
 
     @ManyToOne
     @JoinColumn(name = "service_id", nullable = false)
-    private Service service;
+    private ServiceEntity service;
 
     @LastModifiedDate
     @Column(name = "updated_date", insertable = false)
     private LocalDateTime lastModifiedDate;
-}
-
-enum StatutDemande {
-    EN_ATTENTE, EN_COURS, ACCEPTEE, REFUSEE
 }
