@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet ,RouterModule} from '@angular/router';
 import { HeaderComponent } from "../../components/shared/header/header.component";
 import { SidebarComponent } from "../../components/shared/sidebar/sidebar.component";
 import { MatDividerModule } from '@angular/material/divider';
@@ -17,6 +17,7 @@ import { AuthService } from '../../services/auth.service';
     CommonModule,
     RouterOutlet,
     HeaderComponent,
+    RouterModule,
     MatSidenavModule,
     MatIconModule,
     MatListModule,
@@ -182,5 +183,12 @@ export class DashboardLayoutComponent implements OnInit {
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
     });
+  }
+
+  navigateToSettings(): void {
+    // Vous pouvez rediriger vers le profil ou créer une page de paramètres
+    this.router.navigate(['/agent/profile']);
+    // Ou afficher un message
+    console.log('Paramètres - À implémenter');
   }
 }

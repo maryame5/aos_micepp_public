@@ -91,9 +91,12 @@ export const routes: Routes = [
         
         path: 'services',
         loadComponent: () => import('./pages/public/services/services.component').then(m => m.ServicesComponent)
-         
-      
+      },
 
+      {
+        path: 'settings',
+        loadComponent: () => import('./pages/agent/profile/agent-profile.component').then(m => m.AgentProfileComponent),
+        data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },
       {
         path: '',

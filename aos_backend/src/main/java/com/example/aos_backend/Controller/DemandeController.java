@@ -26,13 +26,12 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/demandes")
 @RequiredArgsConstructor
-@Tag(name = "Demande Controller", description = "Controller for managing demandes") 
+@Tag(name = "Demande Controller", description = "Controller for managing demandes")
 
 public class DemandeController {
 
-    
     private final DemandeService demandeService;
-    
+
     @PostMapping("/nouveau_demande")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<String> createDemande(@RequestBody DemandeRequest request) {
@@ -84,7 +83,7 @@ public class DemandeController {
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> updateDemandeStatus(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @RequestBody StatutDemande newStatus) {
         try {
             demandeService.updateDemandeStatus(id, newStatus);
@@ -97,7 +96,7 @@ public class DemandeController {
     @PutMapping("/{id}/document-reponse")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> addDocumentReponse(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @RequestBody String documentPath) {
         try {
             demandeService.addDocumentReponse(id, documentPath);

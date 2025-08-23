@@ -16,6 +16,7 @@ interface MenuItem {
   children?: MenuItem[];
 }
 
+
 @Component({
   selector: 'app-sidebar',
   standalone: true,
