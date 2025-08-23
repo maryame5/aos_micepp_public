@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class DemandeService {
-    
+
     private final DemandeRepository demandeRepository;
     private final UtilisateurRepository userRepository;
     private final ServiceRepository serviceRepository;
@@ -31,20 +31,20 @@ public class DemandeService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
         Utilisateur utilisateur = userRepository.findByEmail(userEmail)
-            .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
         // Récupérer le service
         ServiceEntity service = serviceRepository.findById(request.getServiceId())
-            .orElseThrow(() -> new RuntimeException("Service non trouvé"));
+                .orElseThrow(() -> new RuntimeException("Service non trouvé"));
 
         // Créer la demande
         Demande demande = Demande.builder()
-            .statut(StatutDemande.EN_ATTENTE)
-            .commentaire(request.getCommentaire())
-            .documentsJustificatifs(request.getDocumentsJustificatifs())
-            .utilisateur(utilisateur)
-            .service(service)
-            .build();
+                .statut(StatutDemande.EN_ATTENTE)
+                .commentaire(request.getCommentaire())
+                .documentsJustificatifs(request.getDocumentsJustificatifs())
+                .utilisateur(utilisateur)
+                .service(service)
+                .build();
 
         // Sauvegarder la demande
         demandeRepository.save(demande);
@@ -59,7 +59,7 @@ public class DemandeService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
         Utilisateur utilisateur = userRepository.findByEmail(userEmail)
-            .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
         return demandeRepository.findByUtilisateur(utilisateur);
     }
@@ -75,8 +75,8 @@ public class DemandeService {
     @Transactional
     public void updateDemandeStatus(Long demandeId, StatutDemande newStatus) {
         Demande demande = demandeRepository.findById(demandeId)
-            .orElseThrow(() -> new RuntimeException("Demande non trouvée"));
-        
+                .orElseThrow(() -> new RuntimeException("Demande non trouvée"));
+
         demande.setStatut(newStatus);
         demandeRepository.save(demande);
     }
@@ -84,15 +84,15 @@ public class DemandeService {
     @Transactional
     public void addDocumentReponse(Long demandeId, String documentPath) {
         Demande demande = demandeRepository.findById(demandeId)
-            .orElseThrow(() -> new RuntimeException("Demande non trouvée"));
-        
+                .orElseThrow(() -> new RuntimeException("Demande non trouvée"));
+
         demande.setDocumentReponse(documentPath);
         demandeRepository.save(demande);
     }
 
     private void processServiceData(ServiceEntity service, Map<String, Object> serviceData, Demande demande) {
         String serviceType = service.getType();
-        
+
         switch (serviceType) {
             case "TransportService":
                 processTransportServiceData((TransportService) service, serviceData);
@@ -115,7 +115,7 @@ public class DemandeService {
             default:
                 System.out.println("Type de service non supporté: " + serviceType);
         }
-        
+
         // Sauvegarder les modifications du service
         serviceRepository.save(service);
     }
@@ -180,7 +180,8 @@ public class DemandeService {
         }
     }
 
-    private void processActiviteCulturelleSportiveServiceData(ActiviteCulturelleSportiveService service, Map<String, Object> data) {
+    private void processActiviteCulturelleSportiveServiceData(ActiviteCulturelleSportiveService service,
+            Map<String, Object> data) {
         if (data.containsKey("typeActivite")) {
             service.setTypeActivite((String) data.get("typeActivite"));
         }

@@ -16,6 +16,7 @@ import { RequestService } from '../../../services/request.service';
 import { DemandeService, DemandeRequest } from '../../../services/demande.service';
 import { AuthService } from '../../../services/auth.service';
 import { Service, RequestPriority } from '../../../models/request.model';
+import { FileUploadService, UploadProgress, UploadResponse } from '../../../services/file-upload.service';
 
 @Component({
   selector: 'app-new-request',
@@ -171,24 +172,34 @@ import { Service, RequestPriority } from '../../../models/request.model';
                 <mat-card-subtitle>Joignez les documents nécessaires à votre demande</mat-card-subtitle>
               </mat-card-header>
               <mat-card-content>
-                <div class="document-upload-area">
+                <div class="document-upload-area" 
+                     (dragover)="onDragOver($event)" 
+                     (dragleave)="onDragLeave($event)" 
+                     (drop)="onDrop($event)"
+                     [class.drag-over]="isDragOver">
                   <mat-icon class="upload-icon">cloud_upload</mat-icon>
                   <p>Glissez-déposez vos fichiers ici ou cliquez pour sélectionner</p>
-                  <input type="file" multiple (change)="onFileSelect($event)" style="display: none;" #fileInput>
+                  <input type="file" multiple (change)="onFileSelect($event)" style="display: none;" #fileInput accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt">
                   <button mat-stroked-button (click)="fileInput.click()">
                     <mat-icon>attach_file</mat-icon>
                     Sélectionner des fichiers
                   </button>
+                  <p class="file-types">Types acceptés: PDF, Word, Images, TXT</p>
                 </div>
 
                 <div class="uploaded-files" *ngIf="uploadedFiles.length > 0">
-                  <h4>Fichiers sélectionnés</h4>
+                  <h4>Fichiers sélectionnés ({{ uploadedFiles.length }})</h4>
+                  <div class="file-summary">
+                    <span class="total-size">Taille totale: {{ getTotalFileSize() }}</span>
+                  </div>
                   <div class="file-list">
                     <div class="file-item" *ngFor="let file of uploadedFiles; let i = index">
-                      <mat-icon>description</mat-icon>
-                      <span class="file-name">{{ file.name }}</span>
-                      <span class="file-size">({{ formatFileSize(file.size) }})</span>
-                      <button mat-icon-button (click)="removeFile(i)" color="warn">
+                      <mat-icon [class]="getFileIconClass(file.name)">{{ getFileIcon(file.name) }}</mat-icon>
+                      <div class="file-info">
+                        <span class="file-name">{{ file.name }}</span>
+                        <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                      </div>
+                      <button mat-icon-button (click)="removeFile(i)" color="warn" title="Supprimer">
                         <mat-icon>delete</mat-icon>
                       </button>
                     </div>
@@ -237,10 +248,19 @@ import { Service, RequestPriority } from '../../../models/request.model';
                   </div>
 
                   <div class="review-item" *ngIf="uploadedFiles.length > 0">
-                    <h4>Documents joints</h4>
-                    <ul>
-                      <li *ngFor="let file of uploadedFiles">{{ file.name }}</li>
-                    </ul>
+                    <h4>Documents joints ({{ uploadedFiles.length }})</h4>
+                    <div class="review-files">
+                      <div class="review-file-item" *ngFor="let file of uploadedFiles">
+                        <mat-icon [class]="getFileIconClass(file.name)" class="review-file-icon">
+                          {{ getFileIcon(file.name) }}
+                        </mat-icon>
+                        <div class="review-file-info">
+                          <span class="review-file-name">{{ file.name }}</span>
+                          <span class="review-file-size">{{ formatFileSize(file.size) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p class="review-total-size">Taille totale: {{ getTotalFileSize() }}</p>
                   </div>
                 </div>
               </mat-card-content>
@@ -332,6 +352,21 @@ import { Service, RequestPriority } from '../../../models/request.model';
       text-align: center;
       background: #f9fafb;
       margin-bottom: 2rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .document-upload-area.drag-over {
+      border-color: #3b82f6;
+      background: #eff6ff;
+      transform: scale(1.02);
+    }
+
+    .file-types {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.5rem;
+      margin-bottom: 0;
     }
 
     .upload-icon {
@@ -347,6 +382,20 @@ import { Service, RequestPriority } from '../../../models/request.model';
       color: #374151;
     }
 
+    .file-summary {
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      background: #f3f4f6;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .total-size {
+      font-size: 0.875rem;
+      color: #6b7280;
+      font-weight: 500;
+    }
+
     .file-list {
       display: flex;
       flex-direction: column;
@@ -357,19 +406,54 @@ import { Service, RequestPriority } from '../../../models/request.model';
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.5rem;
+      padding: 0.75rem;
       background: white;
       border: 1px solid #e5e7eb;
       border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .file-item:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+    }
+
+    .file-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
     }
 
     .file-name {
-      flex: 1;
       font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
     }
 
     .file-size {
       font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    /* File type icon styles */
+    .file-pdf {
+      color: #dc2626;
+    }
+
+    .file-doc {
+      color: #2563eb;
+    }
+
+    .file-image {
+      color: #059669;
+    }
+
+    .file-text {
+      color: #7c3aed;
+    }
+
+    .file-default {
       color: #6b7280;
     }
 
@@ -416,6 +500,56 @@ import { Service, RequestPriority } from '../../../models/request.model';
       padding-left: 1.5rem;
     }
 
+    .review-files {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin: 0.5rem 0;
+    }
+
+    .review-file-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      background: #f9fafb;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .review-file-icon {
+      font-size: 1.25rem;
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    .review-file-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .review-file-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .review-file-size {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .review-total-size {
+      margin: 0.5rem 0 0 0;
+      font-size: 0.875rem;
+      color: #6b7280;
+      font-weight: 500;
+      text-align: right;
+      padding-top: 0.5rem;
+      border-top: 1px solid #e5e7eb;
+    }
+
     @media (max-width: 768px) {
       .new-request-container {
         padding: 0.5rem;
@@ -424,6 +558,47 @@ import { Service, RequestPriority } from '../../../models/request.model';
       .document-upload-area {
         padding: 2rem 1rem;
       }
+    }
+
+    /* Custom snackbar styles */
+    ::ng-deep .warning-snackbar {
+      background: #fef3c7 !important;
+      color: #92400e !important;
+      border-left: 4px solid #f59e0b !important;
+    }
+
+    ::ng-deep .warning-snackbar .mat-simple-snackbar-action {
+      color: #92400e !important;
+    }
+
+    ::ng-deep .info-snackbar {
+      background: #dbeafe !important;
+      color: #1e40af !important;
+      border-left: 4px solid #3b82f6 !important;
+    }
+
+    ::ng-deep .info-snackbar .mat-simple-snackbar-action {
+      color: #1e40af !important;
+    }
+
+    ::ng-deep .success-snackbar {
+      background: #d1fae5 !important;
+      color: #065f46 !important;
+      border-left: 4px solid #10b981 !important;
+    }
+
+    ::ng-deep .success-snackbar .mat-simple-snackbar-action {
+      color: #065f46 !important;
+    }
+
+    ::ng-deep .error-snackbar {
+      background: #fee2e2 !important;
+      color: #991b1b !important;
+      border-left: 4px solid #dc2626 !important;
+    }
+
+    ::ng-deep .error-snackbar .mat-simple-snackbar-action {
+      color: #991b1b !important;
     }
   `]
 })
@@ -434,6 +609,7 @@ export class NewRequestComponent implements OnInit {
   selectedService: Service | null = null;
   uploadedFiles: File[] = [];
   isSubmitting = false;
+  isDragOver = false;
 
   constructor(
     private fb: FormBuilder,
@@ -441,7 +617,8 @@ export class NewRequestComponent implements OnInit {
     private demandeService: DemandeService,
     private authService: AuthService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private fileUploadService: FileUploadService
   ) {
     this.serviceForm = this.fb.group({
       serviceId: ['', Validators.required]
@@ -519,9 +696,77 @@ export class NewRequestComponent implements OnInit {
 
   onFileSelect(event: any): void {
     const files = event.target.files;
-    for (let i = 0; i < files.length; i++) {
-      this.uploadedFiles.push(files[i]);
+    this.addFiles(files);
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = true;
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = false;
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = false;
+    
+    const files = event.dataTransfer?.files;
+    if (files) {
+      this.addFiles(files);
     }
+  }
+
+  private addFiles(files: FileList): void {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      // Check file type
+      if (!this.isValidFileType(file)) {
+        this.snackBar.open(`Type de fichier non supporté: ${file.name}`, 'Fermer', {
+          duration: 3000,
+          panelClass: ['warning-snackbar']
+        });
+        continue;
+      }
+      
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        this.snackBar.open(`Fichier trop volumineux: ${file.name} (max 10MB)`, 'Fermer', {
+          duration: 3000,
+          panelClass: ['warning-snackbar']
+        });
+        continue;
+      }
+      
+      // Check if file already exists
+      if (this.uploadedFiles.some(f => f.name === file.name)) {
+        this.snackBar.open(`Fichier déjà sélectionné: ${file.name}`, 'Fermer', {
+          duration: 3000,
+          panelClass: ['warning-snackbar']
+        });
+        continue;
+      }
+      
+      this.uploadedFiles.push(file);
+    }
+  }
+
+  private isValidFileType(file: File): boolean {
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'text/plain'
+    ];
+    return allowedTypes.includes(file.type);
   }
 
   removeFile(index: number): void {
@@ -536,40 +781,220 @@ export class NewRequestComponent implements OnInit {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
+  getTotalFileSize(): string {
+    const totalBytes = this.uploadedFiles.reduce((total, file) => total + file.size, 0);
+    return this.formatFileSize(totalBytes);
+  }
+
+  getFileIcon(fileName: string): string {
+    const extension = fileName.toLowerCase().split('.').pop();
+    switch (extension) {
+      case 'pdf': return 'picture_as_pdf';
+      case 'doc':
+      case 'docx': return 'description';
+      case 'jpg':
+      case 'jpeg':
+      case 'png': return 'image';
+      case 'txt': return 'article';
+      default: return 'insert_drive_file';
+    }
+  }
+
+  getFileIconClass(fileName: string): string {
+    const extension = fileName.toLowerCase().split('.').pop();
+    switch (extension) {
+      case 'pdf': return 'file-pdf';
+      case 'doc':
+      case 'docx': return 'file-doc';
+      case 'jpg':
+      case 'jpeg':
+      case 'png': return 'file-image';
+      case 'txt': return 'file-text';
+      default: return 'file-default';
+    }
+  }
+
   submitRequest(): void {
+    // Mark all fields as touched to trigger validation display
+    this.serviceForm.markAllAsTouched();
+    this.requestForm.markAllAsTouched();
+    
+    // Check if service is selected
+    if (!this.selectedService) {
+      this.snackBar.open('Veuillez sélectionner un service avant de soumettre', 'Fermer', {
+        duration: 3000,
+        panelClass: ['error-snackbar']
+      });
+      return;
+    }
+
+    // Check if required documents are uploaded
+    if (this.selectedService.requiredDocuments && this.selectedService.requiredDocuments.length > 0) {
+      const uploadedDocNames = this.uploadedFiles.map(file => file.name.toLowerCase());
+      const missingDocs = this.selectedService.requiredDocuments.filter(doc => 
+        !uploadedDocNames.some(uploaded => uploaded.includes(doc.toLowerCase()) || doc.toLowerCase().includes(uploaded))
+      );
+      
+      if (missingDocs.length > 0) {
+        this.snackBar.open(`Documents requis manquants: ${missingDocs.join(', ')}`, 'Fermer', {
+          duration: 5000,
+          panelClass: ['warning-snackbar']
+        });
+        return;
+      }
+    }
+    
     if (this.serviceForm.valid && this.requestForm.valid && !this.isSubmitting) {
       this.isSubmitting = true;
 
-      // Préparer les données de la demande
-      const demandeRequest: DemandeRequest = {
-        serviceId: parseInt(this.serviceForm.value.serviceId),
-        commentaire: this.requestForm.value.description,
-        documentsJustificatifs: this.uploadedFiles.map(file => file.name),
-        serviceData: this.getServiceData()
-      };
+      // First upload files if any
+      if (this.uploadedFiles.length > 0) {
+        this.uploadFilesAndCreateRequest();
+      } else {
+        // Create request without files
+        this.createRequest([]);
+      }
+    } else {
+      // Show validation errors
+      this.snackBar.open('Veuillez corriger les erreurs de validation avant de soumettre', 'Fermer', {
+        duration: 3000,
+        panelClass: ['error-snackbar']
+      });
+    }
+  }
 
-      console.log('Submitting request:', demandeRequest);
+  private uploadFilesAndCreateRequest(): void {
+    console.log('Starting upload process with', this.uploadedFiles.length, 'files');
+    
+    // Show upload progress message
+    this.snackBar.open('Téléversement des documents en cours...', 'Fermer', {
+      duration: 2000,
+      panelClass: ['info-snackbar']
+    });
 
-      this.demandeService.createDemande(demandeRequest).subscribe({
-        next: (response) => {
+    // Try to upload files first using the file upload service
+    this.fileUploadService.uploadDocuments(this.uploadedFiles).subscribe({
+      next: (uploadResponse: UploadResponse) => {
+        console.log('Files uploaded successfully:', uploadResponse);
+        console.log('Document paths received:', uploadResponse.documentPaths);
+        
+        if (uploadResponse.success && uploadResponse.documentPaths && uploadResponse.documentPaths.length > 0) {
+          // Files were uploaded successfully, create request with actual document paths
+          console.log('✅ Using uploaded document paths:', uploadResponse.documentPaths);
+          this.createRequest(uploadResponse.documentPaths);
+        } else {
+          // Upload response indicates failure, fallback to file names
+          console.log('⚠️ Upload response indicates failure, falling back to file names');
+          const fileNames = this.uploadedFiles.map(file => file.name);
+          this.createRequest(fileNames);
+        }
+      },
+      error: (uploadError: any) => {
+        console.error('Error uploading files:', uploadError);
+        console.log('Upload error status:', uploadError.status);
+        console.log('Upload error details:', uploadError);
+        
+        // Only use fallback for specific error statuses that indicate endpoint issues
+        const fallbackStatuses = [0, 404, 501, 405, 502, 503, 504];
+        console.log('Checking if status', uploadError.status, 'is in fallback statuses:', fallbackStatuses);
+        
+        if (fallbackStatuses.includes(uploadError.status)) {
+          console.log(`✅ Upload endpoint not available (status: ${uploadError.status}), proceeding with file names`);
+          
+          let message = 'Téléversement des documents non disponible, création de la demande avec les noms des fichiers';
+          if (uploadError.status === 0) {
+            message = 'Endpoint de téléversement non implémenté, création de la demande avec les noms des fichiers';
+          } else if (uploadError.status === 404) {
+            message = 'Endpoint de téléversement non trouvé, création de la demande avec les noms des fichiers';
+          } else if (uploadError.status === 500) {
+            message = 'Erreur serveur lors du téléversement, création de la demande avec les noms des fichiers';
+          }
+          
+          this.snackBar.open(message, 'Fermer', {
+            duration: 4000,
+            panelClass: ['warning-snackbar']
+          });
+          
+          // Proceed with creating the request using file names
+          const fileNames = this.uploadedFiles.map(file => file.name);
+          console.log('✅ Proceeding with fallback using file names:', fileNames);
+          this.createRequest(fileNames);
+        } else {
+          console.log('❌ Status not in fallback list, showing error');
           this.isSubmitting = false;
-          console.log('Request created successfully:', response);
+          this.snackBar.open('Erreur lors du téléversement des documents', 'Fermer', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+        }
+      }
+    });
+  }
+
+  private createRequest(documentPaths: string[]): void {
+    console.log('=== CREATE REQUEST CALLED ===');
+    console.log('Creating request with document paths:', documentPaths);
+    console.log('Document paths type:', typeof documentPaths);
+    console.log('Document paths length:', documentPaths.length);
+    
+    // Prepare request data
+    const demandeRequest: DemandeRequest = {
+      serviceId: parseInt(this.serviceForm.value.serviceId),
+      commentaire: this.requestForm.value.description,
+      documentsJustificatifs: documentPaths,
+      serviceData: this.getServiceData()
+    };
+
+    console.log('Submitting request:', demandeRequest);
+
+    this.demandeService.createDemande(demandeRequest).subscribe({
+      next: (response) => {
+        this.isSubmitting = false;
+        console.log('Request created successfully:', response);
+        
+        // Check if the request was actually created successfully
+        if (response && (response.id || response.success)) {
           this.snackBar.open('Demande créée avec succès!', 'Fermer', {
             duration: 3000,
             panelClass: ['success-snackbar']
           });
           this.router.navigate(['/agent/requests']);
-        },
-        error: (error) => {
-          this.isSubmitting = false;
-          console.error('Erreur lors de la création de la demande:', error);
+        } else {
+          // Handle case where response doesn't indicate success
+          this.snackBar.open('Demande créée mais confirmation manquante', 'Fermer', {
+            duration: 3000,
+            panelClass: ['warning-snackbar']
+          });
+          this.router.navigate(['/agent/requests']);
+        }
+      },
+      error: (error) => {
+        this.isSubmitting = false;
+        console.error('Erreur lors de la création de la demande:', error);
+        
+        // Check if the error is actually a success (sometimes backend returns error status even on success)
+        if (error.error && (error.error.id || error.error.success)) {
+          this.snackBar.open('Demande créée avec succès!', 'Fermer', {
+            duration: 3000,
+            panelClass: ['success-snackbar']
+          });
+          this.router.navigate(['/agent/requests']);
+        } else if (error.status === 201 || error.status === 200) {
+          // Sometimes the backend returns success status but in error callback
+          this.snackBar.open('Demande créée avec succès!', 'Fermer', {
+            duration: 3000,
+            panelClass: ['success-snackbar']
+          });
+          this.router.navigate(['/agent/requests']);
+        } else {
+          // Show error only if request was not created
           this.snackBar.open('Erreur lors de la création de la demande', 'Fermer', {
             duration: 5000,
             panelClass: ['error-snackbar']
           });
         }
-      });
-    }
+      }
+    });
   }
 
   private getServiceData(): { [key: string]: any } {

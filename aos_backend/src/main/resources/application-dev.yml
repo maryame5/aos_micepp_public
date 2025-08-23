@@ -8,7 +8,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
     show-sql: false
     properties:
       hibernate:
@@ -34,6 +34,11 @@ spring:
           auth: true
           starttls:
             enable: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+      enabled: true
 application:
   security:
     jwt:
@@ -54,6 +59,7 @@ management:
     health:
       show-details: ALWAYS
 
+
 springdoc:
   api-docs:
     path: /api-docs
@@ -61,3 +67,9 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tryItOutEnabled: true
+
+app: 
+  upload: 
+    dir: /uploads
+    max-file-size: 10MB
+    allowed-extensions: [".jpg", ".jpeg", ".png", ".pdf", ".doc",".docs",".txt"]
