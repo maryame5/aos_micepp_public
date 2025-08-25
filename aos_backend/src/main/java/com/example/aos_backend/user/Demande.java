@@ -1,6 +1,7 @@
 package com.example.aos_backend.user;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -31,10 +32,8 @@ public class Demande {
 
     private String commentaire;
 
-    @ElementCollection
-    @CollectionTable(name = "demande_documents", joinColumns = @JoinColumn(name = "demande_id"))
-    @Column(name = "document_path")
-    private List<String> documentsJustificatifs;
+    @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<DocumentJustificatif> documentsJustificatifs;
 
     @Column(name = "document_reponse")
     private String documentReponse;

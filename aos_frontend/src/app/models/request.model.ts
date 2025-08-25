@@ -12,6 +12,17 @@ export interface ServiceRequest {
   assignedTo?: string;
   comments: Comment[];
   dueDate?: Date;
+  
+  // ✅ Nouvelles propriétés pour les données du service
+  serviceData?: {
+    serviceType?: string;
+    serviceName?: string;
+    serviceTitle?: string;
+    serviceDescription?: string;
+    serviceFeatures?: string[];
+    formFields?: FormField[];
+    specificData?: { [key: string]: any }; // Données spécifiques saisies par l'utilisateur
+  };
 }
 
 export enum RequestStatus {
@@ -36,6 +47,7 @@ export interface Document {
   size: number;
   url: string;
   uploadedAt: Date;
+  path?: string; // ✅ Chemin pour le téléchargement
 }
 
 export interface Comment {

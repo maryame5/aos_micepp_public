@@ -1,5 +1,9 @@
 package com.example.aos_backend.Service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -8,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.aos_backend.Controller.DemandeRequest;
 import com.example.aos_backend.Repository.DemandeRepository;
@@ -15,44 +20,98 @@ import com.example.aos_backend.Repository.ServiceRepository;
 import com.example.aos_backend.Repository.UtilisateurRepository;
 import com.example.aos_backend.user.*;
 
+import io.jsonwebtoken.io.IOException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DemandeService {
 
     private final DemandeRepository demandeRepository;
     private final UtilisateurRepository userRepository;
     private final ServiceRepository serviceRepository;
+    private final UtilisateurRepository utilisateurRepository;
 
     @Transactional
-    public void createDemande(DemandeRequest request) {
+    public Demande createDemande(DemandeRequest request, List<MultipartFile> files) throws java.io.IOException {
+        log.info("Creating demande for service ID: {}", request.getServiceId());
+
         // Récupérer l'utilisateur connecté
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
         Utilisateur utilisateur = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé: " + userEmail));
+
+        log.info("Found user: {} ({})", utilisateur.getEmail(), utilisateur.getId());
 
         // Récupérer le service
         ServiceEntity service = serviceRepository.findById(request.getServiceId())
-                .orElseThrow(() -> new RuntimeException("Service non trouvé"));
+                .orElseThrow(() -> new RuntimeException("Service non trouvé: " + request.getServiceId()));
 
-        // Créer la demande
+        log.info("Found service: {} ({})", service.getNom(), service.getId());
+
+        // Créer la demande SANS les documents d'abord
         Demande demande = Demande.builder()
                 .statut(StatutDemande.EN_ATTENTE)
                 .commentaire(request.getCommentaire())
-                .documentsJustificatifs(request.getDocumentsJustificatifs())
+                .documentsJustificatifs(new ArrayList<>()) // Liste vide pour commencer
                 .utilisateur(utilisateur)
                 .service(service)
+                .lastModifiedDate(LocalDateTime.now())
                 .build();
 
-        // Sauvegarder la demande
-        demandeRepository.save(demande);
+        // Sauvegarder la demande pour obtenir l'ID
+        demande = demandeRepository.save(demande);
+        log.info("Created demande with ID: {}", demande.getId());
+
+        // Maintenant traiter les fichiers uploadés
+        if (files != null && !files.isEmpty()) {
+            log.info("Processing {} files", files.size());
+            List<DocumentJustificatif> documents = new ArrayList<>();
+
+            for (MultipartFile file : files) {
+                if (!file.isEmpty()) {
+                    try {
+                        byte[] fileContent = file.getBytes();
+                        log.info(
+                                "____________________________________________________________________________________________________________________________________________________________________________________________________________________________________---File: {}, Size: {} bytes, Content: {}________________________________________________________________________________________",
+                                file.getOriginalFilename(),
+                                fileContent.length, file.getBytes());
+                        DocumentJustificatif doc = DocumentJustificatif.builder()
+                                .fileName(file.getOriginalFilename())
+                                .contentType(file.getContentType())
+                                .content(file.getBytes())
+                                .uploadedAt(LocalDateTime.now())
+                                .demande(demande)
+                                .build();
+                        documents.add(doc);
+                        log.info("Prepared document: {} ({} bytes)", file.getOriginalFilename(), fileContent.length);
+                    } catch (IOException e) {
+                        log.error("Error processing file: {}", file.getOriginalFilename(), e);
+                        throw new RuntimeException("Erreur lors de la lecture du fichier: " + e.getMessage());
+                    }
+                }
+            }
+
+            // Ajouter tous les documents à la demande
+            demande.getDocumentsJustificatifs().addAll(documents);
+
+            // Sauvegarder à nouveau pour persister les documents
+            demande = demandeRepository.save(demande);
+            log.info("Saved {} documents for demande ID: {}",
+                    demande.getDocumentsJustificatifs().size(), demande.getId());
+        }
 
         // Traiter les données spécifiques au service
         if (request.getServiceData() != null && !request.getServiceData().isEmpty()) {
+            log.info("Processing service-specific data: {}", request.getServiceData());
             processServiceData(service, request.getServiceData(), demande);
         }
+
+        log.info("Demande created successfully with ID: {}", demande.getId());
+        return demande;
     }
 
     public List<Demande> getDemandebyUserId() {
@@ -61,37 +120,31 @@ public class DemandeService {
         Utilisateur utilisateur = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-        return demandeRepository.findByUtilisateur(utilisateur);
-    }
-
-    public List<Demande> getAllDemandes() {
-        return demandeRepository.findAll();
+        List<Demande> demandes = demandeRepository.findByUtilisateur(utilisateur);
+        log.info("Retrieved {} demandes for user: {}", demandes.size(), userEmail);
+        return demandes;
     }
 
     public Optional<Demande> getDemandeById(Long id) {
         return demandeRepository.findById(id);
     }
 
-    @Transactional
-    public void updateDemandeStatus(Long demandeId, StatutDemande newStatus) {
-        Demande demande = demandeRepository.findById(demandeId)
-                .orElseThrow(() -> new RuntimeException("Demande non trouvée"));
+    public Map<String, Object> getDemandeServiceData(Long demandeId) {
+        Optional<Demande> demandeOpt = demandeRepository.findById(demandeId);
+        if (demandeOpt.isEmpty()) {
+            log.warn("Demande not found for ID: {}", demandeId);
+            return new HashMap<>();
+        }
 
-        demande.setStatut(newStatus);
-        demandeRepository.save(demande);
-    }
+        Demande demande = demandeOpt.get();
+        ServiceEntity service = demande.getService();
 
-    @Transactional
-    public void addDocumentReponse(Long demandeId, String documentPath) {
-        Demande demande = demandeRepository.findById(demandeId)
-                .orElseThrow(() -> new RuntimeException("Demande non trouvée"));
-
-        demande.setDocumentReponse(documentPath);
-        demandeRepository.save(demande);
+        return extractServiceSpecificData(service);
     }
 
     private void processServiceData(ServiceEntity service, Map<String, Object> serviceData, Demande demande) {
         String serviceType = service.getType();
+        log.info("Processing service data for type: {}", serviceType);
 
         switch (serviceType) {
             case "TransportService":
@@ -113,13 +166,65 @@ public class DemandeService {
                 processActiviteCulturelleSportiveServiceData((ActiviteCulturelleSportiveService) service, serviceData);
                 break;
             default:
-                System.out.println("Type de service non supporté: " + serviceType);
+                log.warn("Unsupported service type: {}", serviceType);
         }
 
         // Sauvegarder les modifications du service
         serviceRepository.save(service);
     }
 
+    private Map<String, Object> extractServiceSpecificData(ServiceEntity service) {
+        Map<String, Object> data = new HashMap<>();
+        String serviceType = service.getType();
+
+        switch (serviceType) {
+            case "TransportService":
+                TransportService transportService = (TransportService) service;
+                data.put("trajet", transportService.getTrajet());
+                data.put("pointDepart", transportService.getPointDepart());
+                data.put("pointArrivee", transportService.getPointArrivee());
+                data.put("frequence", transportService.getFrequence());
+                break;
+
+            case "SanteSocialeService":
+                SanteSocialeService santeService = (SanteSocialeService) service;
+                data.put("typeSoin", santeService.getTypeSoin());
+                data.put("montant", santeService.getMontant());
+                break;
+
+            case "LogementService":
+                LogementService logementService = (LogementService) service;
+                data.put("typeLogement", logementService.getTypeLogement());
+                data.put("localisationSouhaitee", logementService.getLocalisationSouhaitee());
+                data.put("montantParticipation", logementService.getMontantParticipation());
+                break;
+
+            case "ColonieVacanceService":
+                ColonieVacanceService colonieService = (ColonieVacanceService) service;
+                data.put("nombreEnfants", colonieService.getNombreEnfants());
+                data.put("lieuSouhaite", colonieService.getLieuSouhaite());
+                data.put("periode", colonieService.getPeriode());
+                break;
+
+            case "AppuiScolaireService":
+                AppuiScolaireService appuiService = (AppuiScolaireService) service;
+                data.put("niveau", appuiService.getNiveau());
+                data.put("typeAide", appuiService.getTypeAide());
+                data.put("montantDemande", appuiService.getMontantDemande());
+                break;
+
+            case "ActiviteCulturelleSportiveService":
+                ActiviteCulturelleSportiveService activiteService = (ActiviteCulturelleSportiveService) service;
+                data.put("typeActivite", activiteService.getTypeActivite());
+                data.put("nomActivite", activiteService.getNomActivite());
+                data.put("dateActivite", activiteService.getDateActivite());
+                break;
+        }
+
+        return data;
+    }
+
+    // Service-specific data processing methods
     private void processTransportServiceData(TransportService service, Map<String, Object> data) {
         if (data.containsKey("trajet")) {
             service.setTrajet((String) data.get("trajet"));
