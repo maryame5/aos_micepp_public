@@ -16,7 +16,7 @@ import { RequestService } from '../../../services/request.service';
 import { DemandeService, DemandeRequest } from '../../../services/demande.service';
 import { AuthService } from '../../../services/auth.service';
 import { Service, RequestPriority, ServiceRequest } from '../../../models/request.model';
-import { FileUploadService, UploadProgress, UploadResponse } from '../../../services/file-upload.service';
+
 
 @Component({
   selector: 'app-new-request',
@@ -633,7 +633,6 @@ export class NewRequestComponent implements OnInit {
 
   loadServices(): void {
     if (!this.authService.isAuthenticated()) {
-      console.error('User not authenticated');
       this.snackBar.open('Veuillez vous connecter pour accéder aux services', 'Fermer', {
         duration: 5000,
         panelClass: ['error-snackbar']
@@ -644,11 +643,9 @@ export class NewRequestComponent implements OnInit {
 
     this.requestService.getServices().subscribe({
       next: (services) => {
-        console.log('Services loaded:', services);
         this.services = services.filter(s => s.isActive);
       },
       error: (error) => {
-        console.error('Error loading services:', error);
         if (error.status === 401 || error.status === 403) {
           this.snackBar.open('Session expirée. Veuillez vous reconnecter.', 'Fermer', {
             duration: 5000,
@@ -667,22 +664,14 @@ export class NewRequestComponent implements OnInit {
   }
 
   onServiceChange(serviceId: string): void {
-    console.log('Service selected:', serviceId);
     this.selectedService = this.services.find(s => s.id === serviceId) || null;
-    
     if (this.selectedService) {
-      console.log('Selected service:', this.selectedService);
-      console.log('Form fields:', this.selectedService.formFields);
-      
-      // Clear existing dynamic fields
       const currentFields = Object.keys(this.requestForm.controls);
       currentFields.forEach(field => {
         if (field !== 'description') {
           this.requestForm.removeControl(field);
         }
       });
-      
-      // Add new dynamic form fields
       if (this.selectedService.formFields && this.selectedService.formFields.length > 0) {
         this.selectedService.formFields.forEach(field => {
           const validators = field.required ? [Validators.required] : [];
@@ -815,7 +804,7 @@ export class NewRequestComponent implements OnInit {
     }
     if (this.selectedService.requiredDocuments && this.selectedService.requiredDocuments.length > 0) {
       const uploadedDocNames = this.uploadedFiles.map(file => file.name.toLowerCase());
-      const missingDocs = this.selectedService.requiredDocuments.filter(doc => 
+      const missingDocs = this.selectedService.requiredDocuments.filter(doc =>
         !uploadedDocNames.some(uploaded => uploaded.includes(doc.toLowerCase()) || doc.toLowerCase().includes(uploaded))
       );
       
@@ -823,9 +812,11 @@ export class NewRequestComponent implements OnInit {
     if (this.serviceForm.valid && this.requestForm.valid && !this.isSubmitting) {
       this.isSubmitting = true;
       this.snackBar.open('Création de la demande en cours...', 'Fermer', {
-      duration: 2000,
-      panelClass: ['info-snackbar']
-    });
+
+        duration: 2000,
+        panelClass: ['info-snackbar']
+      });
+
 
       const request: Partial<ServiceRequest> = {
         serviceId: this.serviceForm.value.serviceId,
@@ -833,32 +824,38 @@ export class NewRequestComponent implements OnInit {
         title: `Demande pour ${this.selectedService.name}`,
         userId: this.authService.getCurrentUser()?.id || '',
         priority: RequestPriority.MEDIUM,
+<
       serviceData: this.getServiceData()
     };
 
       this.requestService.createRequest(request, this.uploadedFiles).subscribe({
       next: (response) => {
         this.isSubmitting = false;
+
           this.snackBar.open('Demande créée avec succès!', 'Fermer', {
             duration: 3000,
             panelClass: ['success-snackbar']
           });
           this.router.navigate(['/agent/requests']);
-      },
-      error: (error) => {
-        this.isSubmitting = false;
+
+        },
+        error: (error) => {
+          this.isSubmitting = false;
+
           this.snackBar.open('Erreur lors de la création de la demande', 'Fermer', {
             duration: 5000,
             panelClass: ['error-snackbar']
           });
         }
       });
-        } else {
+
+    } else {
       this.snackBar.open('Veuillez corriger les erreurs de validation avant de soumettre', 'Fermer', {
         duration: 3000,
-            panelClass: ['error-snackbar']
-          });
-        }
+        panelClass: ['error-snackbar']
+      });
+    }
+
   }
 
   private getServiceData(): { [key: string]: any } {
