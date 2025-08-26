@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Data
 @Builder
@@ -23,7 +25,9 @@ public class DocumentJustificatif {
     private String fileName;
 
     @Lob
+    @Basic(fetch = FetchType.LAZY)
     @Column(name = "content")
+    @JsonIgnore
     private byte[] content;
 
     @Column(name = "uploaded_at")
@@ -31,5 +35,6 @@ public class DocumentJustificatif {
 
     @ManyToOne
     @JoinColumn(name = "demande_id", nullable = false)
+    @JsonBackReference
     private Demande demande;
 }
