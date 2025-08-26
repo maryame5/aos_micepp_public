@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -22,22 +23,33 @@ public class DocumentUploadService {
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
-    @Value("${app.upload.max-file-size:10MB}") // 10MB par défaut
+    @Value("${app.upload.max-file-size:10MB}")
     private String maxFileSizeStr;
 
     @Value("${app.upload.allowed-extensions}")
     private List<String> allowedExtensions;
 
+    private Path uploadPath;
+
+    @PostConstruct
+    public void init() {
+        // Initialiser le chemin d'upload au démarrage
+        this.uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+
+        try {
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+                log.info("Created upload directory: {}", uploadPath);
+            }
+        } catch (IOException e) {
+            log.error("Could not create upload directory: {}", uploadPath, e);
+            throw new RuntimeException("Could not create upload directory", e);
+        }
+    }
+
     public String uploadDocument(MultipartFile file) throws IOException {
         // Validation du fichier
         validateFile(file);
-
-        // Créer le répertoire d'upload s'il n'existe pas
-        Path uploadPath = Paths.get(uploadDir);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-            log.info("Created upload directory: {}", uploadPath.toAbsolutePath());
-        }
 
         // Générer un nom de fichier unique
         String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
@@ -50,48 +62,34 @@ public class DocumentUploadService {
         // Sauvegarder le fichier
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        // Retourner le chemin relatif pour la base de données
-        String relativePath = uploadDir + "/" + uniqueFilename;
-        log.info("File uploaded successfully: {} -> {}", originalFilename, relativePath);
-
-        return relativePath;
+        // Retourner le nom du fichier unique pour la base de données
+        log.info("File uploaded successfully: {} -> {}", originalFilename, uniqueFilename);
+        return uniqueFilename;
     }
 
     private void validateFile(MultipartFile file) throws IOException {
-        // Vérifier si le fichier est vide
         if (file.isEmpty()) {
             throw new IOException("Le fichier est vide");
         }
 
-        // Vérifier la taille du fichier (convertir 10MB en bytes)
         long maxFileSizeBytes = parseFileSize(maxFileSizeStr);
         if (file.getSize() > maxFileSizeBytes) {
             throw new IOException("Le fichier est trop volumineux. Taille maximale: " + maxFileSizeStr);
         }
 
-        // Vérifier l'extension du fichier
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null || originalFilename.trim().isEmpty()) {
             throw new IOException("Nom de fichier invalide");
         }
 
         String fileExtension = getFileExtension(originalFilename).toLowerCase();
-
-        boolean extensionAllowed = false;
-        for (String ext : allowedExtensions) {
-            // Enlever le point si présent
-            String cleanExt = ext.startsWith(".") ? ext.substring(1) : ext;
-            if (cleanExt.equalsIgnoreCase(fileExtension)) {
-                extensionAllowed = true;
-                break;
-            }
-        }
+        boolean extensionAllowed = allowedExtensions.stream()
+                .anyMatch(ext -> ext.equalsIgnoreCase(fileExtension));
 
         if (!extensionAllowed) {
             throw new IOException("Extension de fichier non autorisée. Extensions autorisées: " + allowedExtensions);
         }
 
-        // Vérifier le type MIME
         String contentType = file.getContentType();
         if (contentType == null || contentType.trim().isEmpty()) {
             throw new IOException("Type de contenu invalide");
@@ -125,14 +123,14 @@ public class DocumentUploadService {
             sizeStr = sizeStr.substring(0, sizeStr.length() - 2);
         } else if (sizeStr.endsWith("GB")) {
             multiplier = 1024 * 1024 * 1024;
-            sizeStr = sizeStr.substring(0, sizeStr.length() - 3);
+            sizeStr = sizeStr.substring(0, sizeStr.length() - 2);
         }
 
         try {
-            return Long.parseLong(sizeStr) * multiplier;
+            return Long.parseLong(sizeStr.trim()) * multiplier;
         } catch (NumberFormatException e) {
             log.warn("Invalid file size format: {}, using default 10MB", sizeStr);
-            return 10 * 1024 * 1024; // 10MB par défaut
+            return 10 * 1024 * 1024;
         }
     }
 
@@ -146,31 +144,28 @@ public class DocumentUploadService {
         return String.format("%.1f GB", bytes / (1024.0 * 1024.0 * 1024.0));
     }
 
-    // Méthode pour supprimer un document
-    public boolean deleteDocument(String documentPath) {
+    public boolean deleteDocument(String filename) {
         try {
-            Path filePath = Paths.get(documentPath);
+            Path filePath = uploadPath.resolve(filename);
             if (Files.exists(filePath)) {
                 Files.delete(filePath);
-                log.info("Document deleted successfully: {}", documentPath);
+                log.info("Document deleted successfully: {}", filename);
                 return true;
             } else {
-                log.warn("Document not found for deletion: {}", documentPath);
+                log.warn("Document not found for deletion: {}", filename);
                 return false;
             }
         } catch (IOException e) {
-            log.error("Error deleting document: {}", documentPath, e);
+            log.error("Error deleting document: {}", filename, e);
             return false;
         }
     }
 
-    // Méthode pour obtenir le chemin absolu d'un document
-    public Path getDocumentPath(String documentPath) {
-        return Paths.get(documentPath);
+    public Path getDocumentPath(String filename) {
+        return uploadPath.resolve(filename);
     }
 
-    // Méthode pour vérifier si un document existe
-    public boolean documentExists(String documentPath) {
-        return Files.exists(Paths.get(documentPath));
+    public boolean documentExists(String filename) {
+        return Files.exists(uploadPath.resolve(filename));
     }
 }
