@@ -473,15 +473,14 @@ export class AgentComplaintsComponent implements OnInit {
     this.hasError = false;
     this.errorMessage = '';
 
-    // Note: Your backend only has getComplaintByUser() method which returns a single complaint
-    // You'll need to add an endpoint to get all complaints for the user, or modify this
-    this.complaintService.getComplaintByUser().subscribe({
-      next: (complaint: ReclamationResponse) => {
-        console.log('Loaded user complaint:', complaint);
+    // Updated to use the corrected service method that returns an array
+    this.complaintService.getComplaintsByUser().subscribe({
+      next: (complaints: ReclamationResponse[]) => {
+        console.log('Loaded user complaints:', complaints);
         
-        // Convert single complaint to array format for consistency with UI
-        if (complaint) {
-          this.complaints = [this.mapBackendComplaint(complaint)];
+        // Map backend complaints to frontend format
+        if (complaints && complaints.length > 0) {
+          this.complaints = complaints.map(complaint => this.mapBackendComplaint(complaint));
         } else {
           this.complaints = [];
         }
@@ -514,7 +513,6 @@ export class AgentComplaintsComponent implements OnInit {
       }
     });
   }
-
   private mapBackendComplaint(backendComplaint: ReclamationResponse): Complaint {
     return {
       id: backendComplaint.id || 0,
