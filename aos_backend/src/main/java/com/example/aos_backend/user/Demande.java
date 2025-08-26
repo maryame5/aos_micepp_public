@@ -10,7 +10,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.*;
 import lombok.*;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Data
 @Builder
@@ -34,7 +33,6 @@ public class Demande {
     private String commentaire;
 
     @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @JsonManagedReference
     private List<DocumentJustificatif> documentsJustificatifs;
 
     @Column(name = "document_reponse")
