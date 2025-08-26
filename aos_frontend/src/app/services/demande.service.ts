@@ -1,13 +1,19 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface DemandeRequest {
   serviceId: number;
   commentaire: string;
-  documentsJustificatifs: string[];
   serviceData: { [key: string]: any };
+}
+
+export interface DocumentJustificatif {
+  id: number;
+  fileName: string;
+  contentType: string;
+  uploadedAt?: string;
 }
 
 export interface Demande {
@@ -15,7 +21,7 @@ export interface Demande {
   dateSoumission: string;
   statut: 'EN_ATTENTE' | 'EN_COURS' | 'ACCEPTEE' | 'REFUSEE';
   commentaire: string;
-  documentsJustificatifs: string[];
+  documentsJustificatifs: DocumentJustificatif[];
   documentReponse?: string;
   utilisateur?: {
     id: number;
@@ -26,8 +32,41 @@ export interface Demande {
   service: {
     id: number;
     nom: string;
+    type?: string;
   };
   lastModifiedDate?: string;
+}
+
+export interface DemandeServiceData {
+  // Transport Service
+  trajet?: string;
+  pointDepart?: string;
+  pointArrivee?: string;
+  frequence?: string;
+  
+  // Santé Sociale Service
+  typeSoin?: string;
+  montant?: number;
+  
+  // Logement Service
+  typeLogement?: string;
+  localisationSouhaitee?: string;
+  montantParticipation?: number;
+  
+  // Colonie Vacance Service
+  nombreEnfants?: number;
+  lieuSouhaite?: string;
+  periode?: string;
+  
+  // Appui Scolaire Service
+  niveau?: string;
+  typeAide?: string;
+  montantDemande?: number;
+  
+  // Activité Culturelle Sportive Service
+  typeActivite?: string;
+  nomActivite?: string;
+  dateActivite?: string;
 }
 
 @Injectable({
@@ -38,27 +77,77 @@ export class DemandeService {
 
   constructor(private http: HttpClient) {}
 
-  createDemande(request: DemandeRequest): Observable<any> {
-    return this.http.post(`${this.apiUrl}/nouveau_demande`, request);
+  private getAuthHeaders(): HttpHeaders {
+    const token = localStorage.getItem('jwt_token');
+    return new HttpHeaders({
+      'Authorization': token ? `Bearer ${token}` : ''
+    });
+  }
+
+  /**
+   * Create a new demande with files using multipart/form-data
+   * This matches your backend's expected format
+   */
+  createDemande(request: DemandeRequest, files: File[]): Observable<any> {
+    const formData = new FormData();
+    
+    // Add the JSON request as a blob part
+    const requestBlob = new Blob([JSON.stringify(request)], {
+      type: 'application/json'
+    });
+    formData.append('request', requestBlob);
+    
+    // Add each file
+    if (files && files.length > 0) {
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': localStorage.getItem('jwt_token') ? `Bearer ${localStorage.getItem('jwt_token')}` : ''
+      // Don't set Content-Type - let browser set it with boundary for multipart
+    });
+
+    return this.http.post(`${this.apiUrl}/nouveau_demande`, formData, {
+      headers: headers
+    });
   }
 
   getUserDemandes(): Observable<Demande[]> {
-    return this.http.get<Demande[]>(this.apiUrl);
+    return this.http.get<Demande[]>(this.apiUrl, {
+      headers: this.getAuthHeaders()
+    });
   }
 
   getAllDemandes(): Observable<Demande[]> {
-    return this.http.get<Demande[]>(`${this.apiUrl}/all`);
+    return this.http.get<Demande[]>(`${this.apiUrl}/all`, {
+      headers: this.getAuthHeaders()
+    });
   }
 
   getDemandeById(id: number): Observable<Demande> {
-    return this.http.get<Demande>(`${this.apiUrl}/${id}`);
+    return this.http.get<Demande>(`${this.apiUrl}/${id}`, {
+      headers: this.getAuthHeaders()
+    });
+  }
+
+  getDemandeServiceData(id: number): Observable<DemandeServiceData> {
+    return this.http.get<DemandeServiceData>(`${this.apiUrl}/${id}/service-data`, {
+      headers: this.getAuthHeaders()
+    });
+  }
+
+  downloadDocument(demandeId: number, documentId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${demandeId}/documents/${documentId}`, {
+      headers: this.getAuthHeaders(),
+      responseType: 'blob'
+    });
   }
 
   updateDemandeStatus(id: number, status: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${id}/status`, status);
-  }
-
-  addDocumentReponse(id: number, documentPath: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${id}/document-reponse`, documentPath);
+    return this.http.put(`${this.apiUrl}/${id}/status`, status, {
+      headers: this.getAuthHeaders()
+    });
   }
 }
