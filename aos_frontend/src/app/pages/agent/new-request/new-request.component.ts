@@ -824,7 +824,7 @@ export class NewRequestComponent implements OnInit {
         title: `Demande pour ${this.selectedService.name}`,
         userId: this.authService.getCurrentUser()?.id || '',
         priority: RequestPriority.MEDIUM,
-<
+
       serviceData: this.getServiceData()
     };
 
