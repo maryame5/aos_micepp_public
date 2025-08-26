@@ -86,12 +86,14 @@ export class RequestService {
     return this.demandeService.createDemande(demandeRequest, files).pipe(
       map(response => ({
         id: response.id.toString(),
+
         userId: request.userId!,
         serviceId: request.serviceId!,
         title: request.title!,
         description: request.description!,
         status: RequestStatus.PENDING,
         priority: request.priority || RequestPriority.MEDIUM,
+
         documents: files.map((file, index) => ({
           id: `${index}`,
           name: file.name,
@@ -100,9 +102,11 @@ export class RequestService {
           url: '', // URL will be set when fetching the demande
           uploadedAt: new Date()
         })),
-        comments: [],
-        createdAt: new Date(),
-        updatedAt: new Date()
+
+          comments: [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+
       })),
       catchError(error => {
         console.error('Error creating request:', error);

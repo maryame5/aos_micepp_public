@@ -17,6 +17,7 @@ import { DemandeService, DemandeRequest } from '../../../services/demande.servic
 import { AuthService } from '../../../services/auth.service';
 import { Service, RequestPriority, ServiceRequest } from '../../../models/request.model';
 
+
 @Component({
   selector: 'app-new-request',
   standalone: true,
@@ -811,9 +812,11 @@ export class NewRequestComponent implements OnInit {
     if (this.serviceForm.valid && this.requestForm.valid && !this.isSubmitting) {
       this.isSubmitting = true;
       this.snackBar.open('Création de la demande en cours...', 'Fermer', {
+
         duration: 2000,
         panelClass: ['info-snackbar']
       });
+
 
       const request: Partial<ServiceRequest> = {
         serviceId: this.serviceForm.value.serviceId,
@@ -821,32 +824,38 @@ export class NewRequestComponent implements OnInit {
         title: `Demande pour ${this.selectedService.name}`,
         userId: this.authService.getCurrentUser()?.id || '',
         priority: RequestPriority.MEDIUM,
-        serviceData: this.getServiceData()
-      };
+<
+      serviceData: this.getServiceData()
+    };
 
       this.requestService.createRequest(request, this.uploadedFiles).subscribe({
-        next: (response) => {
-          this.isSubmitting = false;
+      next: (response) => {
+        this.isSubmitting = false;
+
           this.snackBar.open('Demande créée avec succès!', 'Fermer', {
             duration: 3000,
             panelClass: ['success-snackbar']
           });
           this.router.navigate(['/agent/requests']);
+
         },
         error: (error) => {
           this.isSubmitting = false;
+
           this.snackBar.open('Erreur lors de la création de la demande', 'Fermer', {
             duration: 5000,
             panelClass: ['error-snackbar']
           });
         }
       });
+
     } else {
       this.snackBar.open('Veuillez corriger les erreurs de validation avant de soumettre', 'Fermer', {
         duration: 3000,
         panelClass: ['error-snackbar']
       });
     }
+
   }
 
   private getServiceData(): { [key: string]: any } {
