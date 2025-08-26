@@ -11,6 +11,7 @@ import { PageHeaderComponent } from '../../../components/shared/page-header/page
 import { LoadingComponent } from '../../../components/shared/loading/loading.component';
 import { RequestService } from '../../../services/request.service';
 import { ServiceRequest, RequestStatus } from '../../../models/request.model';
+import { DemandeService } from '../../../services/demande.service';
 
 @Component({
   selector: 'app-request-detail',
@@ -92,6 +93,13 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
                 <h4>Description</h4>
                 <p>{{ request.description }}</p>
               </div>
+
+              <div class="service-data-section" *ngIf="request.serviceData">
+                <h4>Données spécifiques du service</h4>
+                <div *ngFor="let field of getServiceDataFields()">
+                  <strong>{{ field.label }}:</strong> {{ field.value }}
+                </div>
+              </div>
             </mat-card-content>
           </mat-card>
 
@@ -103,12 +111,12 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
             <mat-card-content>
               <div class="documents-list">
                 <div class="document-item" *ngFor="let doc of request.documents">
-                  <mat-icon>description</mat-icon>
+                  <mat-icon>{{ getFileIcon(doc.name) }}</mat-icon>
                   <div class="document-info">
                     <span class="document-name">{{ doc.name }}</span>
                     <span class="document-size">{{ formatFileSize(doc.size) }}</span>
                   </div>
-                  <button mat-icon-button>
+                  <button mat-icon-button (click)="downloadDocument(doc.id, request.id, doc.name)">
                     <mat-icon>download</mat-icon>
                   </button>
                 </div>
@@ -356,7 +364,8 @@ export class RequestDetailComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private requestService: RequestService
+    private requestService: RequestService,
+    private demandeService: DemandeService
   ) {}
 
   ngOnInit(): void {
@@ -372,6 +381,16 @@ export class RequestDetailComponent implements OnInit {
         next: (request) => {
           this.request = request || null;
           this.isLoading = false;
+          if (request) {
+            this.requestService.getServiceSpecificData(request.serviceId, request.id).subscribe({
+              next: (serviceData) => {
+                if (this.request) {
+                  this.request.serviceData = { ...this.request.serviceData, specificData: serviceData };
+                }
+              },
+              error: (error) => console.error('Error fetching service specific data:', error)
+            });
+          }
         },
         error: (error) => {
           console.error('Error loading request:', error);
@@ -416,5 +435,44 @@ export class RequestDetailComponent implements OnInit {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  getFileIcon(fileName: string): string {
+    const extension = fileName.toLowerCase().split('.').pop();
+    switch (extension) {
+      case 'pdf': return 'picture_as_pdf';
+      case 'doc':
+      case 'docx': return 'description';
+      case 'jpg':
+      case 'jpeg':
+      case 'png': return 'image';
+      case 'txt': return 'article';
+      default: return 'insert_drive_file';
+    }
+  }
+
+  downloadDocument(documentId: string, demandeId: string, fileName: string): void {
+    this.demandeService.downloadDocument(parseInt(demandeId), parseInt(documentId)).subscribe({
+      next: (blob: Blob | MediaSource) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (error: any) => {
+        console.error('Error downloading document:', error);
+        alert('Erreur lors du téléchargement du document');
+      }
+    });
+  }
+
+  getServiceDataFields(): { label: string, value: any }[] {
+    if (!this.request?.serviceData?.specificData) return [];
+    return Object.entries(this.request.serviceData.specificData).map(([key, value]) => ({
+      label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
+      value
+    }));
   }
 }

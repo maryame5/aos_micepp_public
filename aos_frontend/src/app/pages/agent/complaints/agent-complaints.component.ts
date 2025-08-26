@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,22 +8,21 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { FormsModule } from '@angular/forms';
 import { PageHeaderComponent } from '../../../components/shared/page-header/page-header.component';
 import { LoadingComponent } from '../../../components/shared/loading/loading.component';
 import { AuthService } from '../../../services/auth.service';
+import { ComplaintService, ReclamationResponse, StatutReclamation } from '../../../services/complaint.service';
 
+// Updated interface to match your backend model
 interface Complaint {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  status: 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  createdAt: Date;
-  updatedAt: Date;
-  assignedTo?: string;
-  resolution?: string;
+  id: number;
+  objet: string; // Changed from title
+  contenu: string; // Changed from description
+  statut: StatutReclamation; // Changed from status, using enum
+  dateSoumission: string; // Changed from createdAt
+  lastModifiedDate?: string; // Changed from updatedAt
 }
 
 @Component({
@@ -49,7 +48,7 @@ interface Complaint {
         title="Mes Réclamations" 
         subtitle="Consultez et gérez vos réclamations">
         <div slot="actions">
-          <button mat-raised-button color="primary" (click)="openNewComplaintDialog()">
+          <button mat-raised-button color="primary" routerLink="/agent/Reclamation/new">
             <mat-icon>add</mat-icon>
             Nouvelle réclamation
           </button>
@@ -64,7 +63,7 @@ interface Complaint {
           <div class="filters-container">
             <mat-form-field appearance="outline">
               <mat-label>Rechercher</mat-label>
-              <input matInput [(ngModel)]="searchTerm" (input)="applyFilters()" placeholder="Titre ou description...">
+              <input matInput [(ngModel)]="searchTerm" (input)="applyFilters()" placeholder="Objet ou contenu...">
               <mat-icon matSuffix>search</mat-icon>
             </mat-form-field>
 
@@ -72,53 +71,45 @@ interface Complaint {
               <mat-label>Statut</mat-label>
               <mat-select [(value)]="selectedStatus" (selectionChange)="applyFilters()">
                 <mat-option value="">Tous les statuts</mat-option>
-                <mat-option value="OPEN">Ouverte</mat-option>
-                <mat-option value="ASSIGNED">Assignée</mat-option>
-                <mat-option value="IN_PROGRESS">En cours</mat-option>
-                <mat-option value="RESOLVED">Résolue</mat-option>
-                <mat-option value="CLOSED">Fermée</mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Catégorie</mat-label>
-              <mat-select [(value)]="selectedCategory" (selectionChange)="applyFilters()">
-                <mat-option value="">Toutes les catégories</mat-option>
-                <mat-option value="Technique">Technique</mat-option>
-                <mat-option value="Service">Service</mat-option>
-                <mat-option value="Facturation">Facturation</mat-option>
-                <mat-option value="Autre">Autre</mat-option>
+                <mat-option value="EN_ATTENTE">En attente</mat-option>
+                <mat-option value="EN_COURS">En cours</mat-option>
+                <mat-option value="RESOLUE">Résolue</mat-option>
+                <mat-option value="FERMEE">Fermée</mat-option>
               </mat-select>
             </mat-form-field>
 
             <button mat-icon-button (click)="clearFilters()" title="Effacer les filtres">
               <mat-icon>clear</mat-icon>
             </button>
+
+            <button mat-icon-button (click)="loadComplaints()" title="Actualiser" [disabled]="isLoading">
+              <mat-icon>refresh</mat-icon>
+            </button>
           </div>
         </mat-card>
 
         <!-- Stats Cards -->
         <div class="stats-grid">
-          <div class="stat-card open">
+          <div class="stat-card pending">
             <div class="stat-content">
-              <div class="stat-number">{{ getComplaintsByStatus('OPEN').length }}</div>
-              <div class="stat-label">Ouvertes</div>
+              <div class="stat-number">{{ getComplaintsByStatus('EN_ATTENTE').length }}</div>
+              <div class="stat-label">En attente</div>
             </div>
-            <mat-icon>report_problem</mat-icon>
+            <mat-icon>schedule</mat-icon>
           </div>
 
           <div class="stat-card in-progress">
             <div class="stat-content">
-              <div class="stat-number">{{ getComplaintsByStatus('IN_PROGRESS').length + getComplaintsByStatus('ASSIGNED').length }}</div>
-              <div class="stat-label">En traitement</div>
+              <div class="stat-number">{{ getComplaintsByStatus('EN_COURS').length }}</div>
+              <div class="stat-label">En cours</div>
             </div>
             <mat-icon>sync</mat-icon>
           </div>
 
           <div class="stat-card resolved">
             <div class="stat-content">
-              <div class="stat-number">{{ getComplaintsByStatus('RESOLVED').length + getComplaintsByStatus('CLOSED').length }}</div>
-              <div class="stat-label">Résolues</div>
+              <div class="stat-number">{{ getComplaintsByStatus('RESOLUE').length + getComplaintsByStatus('FERMEE').length }}</div>
+              <div class="stat-label">Traitées</div>
             </div>
             <mat-icon>check_circle</mat-icon>
           </div>
@@ -130,12 +121,12 @@ interface Complaint {
             <mat-card-header>
               <div class="complaint-header-content">
                 <div class="complaint-title-section">
-                  <mat-card-title>{{ complaint.title }}</mat-card-title>
-                  <mat-card-subtitle>{{ complaint.description | slice:0:150 }}...</mat-card-subtitle>
+                  <mat-card-title>{{ complaint.objet }}</mat-card-title>
+                  <mat-card-subtitle>{{ complaint.contenu | slice:0:150 }}{{ complaint.contenu.length > 150 ? '...' : '' }}</mat-card-subtitle>
                 </div>
                 <div class="complaint-status">
-                  <mat-chip [class]="getStatusClass(complaint.status)">
-                    {{ getStatusLabel(complaint.status) }}
+                  <mat-chip [class]="getStatusClass(complaint.statut)">
+                    {{ getStatusLabel(complaint.statut) }}
                   </mat-chip>
                 </div>
               </div>
@@ -144,32 +135,21 @@ interface Complaint {
             <mat-card-content>
               <div class="complaint-meta">
                 <div class="meta-item">
-                  <mat-icon>category</mat-icon>
-                  <span>{{ complaint.category }}</span>
+                  <mat-icon>event</mat-icon>
+                  <span>Créée le {{ formatDate(complaint.dateSoumission) }}</span>
+                </div>
+                <div class="meta-item" *ngIf="complaint.lastModifiedDate && complaint.lastModifiedDate !== complaint.dateSoumission">
+                  <mat-icon>update</mat-icon>
+                  <span>Modifiée le {{ formatDate(complaint.lastModifiedDate) }}</span>
                 </div>
                 <div class="meta-item">
-                  <mat-icon>event</mat-icon>
-                  <span>Créée le {{ complaint.createdAt | date:'dd/MM/yyyy' }}</span>
-                </div>
-                <div class="meta-item" *ngIf="complaint.updatedAt !== complaint.createdAt">
-                  <mat-icon>update</mat-icon>
-                  <span>Modifiée le {{ complaint.updatedAt | date:'dd/MM/yyyy' }}</span>
-                </div>
-                <div class="meta-item" *ngIf="complaint.priority">
-                  <mat-icon [class]="getPriorityIconClass(complaint.priority)">
-                    {{ getPriorityIcon(complaint.priority) }}
-                  </mat-icon>
-                  <span>{{ getPriorityLabel(complaint.priority) }}</span>
-                </div>
-                <div class="meta-item" *ngIf="complaint.assignedTo">
-                  <mat-icon>person</mat-icon>
-                  <span>Assignée à {{ complaint.assignedTo }}</span>
+                  <mat-icon>fingerprint</mat-icon>
+                  <span>ID: {{ complaint.id }}</span>
                 </div>
               </div>
 
-              <div class="resolution-section" *ngIf="complaint.resolution">
-                <h4>Résolution</h4>
-                <p>{{ complaint.resolution }}</p>
+              <div class="complaint-content" *ngIf="complaint.contenu.length <= 150">
+                <p>{{ complaint.contenu }}</p>
               </div>
             </mat-card-content>
 
@@ -178,13 +158,13 @@ interface Complaint {
                 <mat-icon>visibility</mat-icon>
                 Voir détails
               </button>
-              <button mat-button *ngIf="canEditComplaint(complaint)" color="primary">
+              <button mat-button *ngIf="canEditComplaint(complaint)" color="primary" disabled>
                 <mat-icon>edit</mat-icon>
                 Modifier
               </button>
-              <button mat-button *ngIf="complaint.status === 'RESOLVED'" color="accent">
+              <button mat-button *ngIf="complaint.statut === 'RESOLUE'" color="accent" disabled>
                 <mat-icon>thumb_up</mat-icon>
-                Marquer comme satisfait
+                Évaluer
               </button>
             </mat-card-actions>
           </mat-card>
@@ -196,10 +176,15 @@ interface Complaint {
               <mat-icon class="empty-icon">report_problem</mat-icon>
               <h3>Aucune réclamation trouvée</h3>
               <p *ngIf="hasActiveFilters()">Essayez de modifier vos critères de recherche</p>
-              <p *ngIf="!hasActiveFilters()">Vous n'avez pas encore créé de réclamation</p>
-              <button mat-raised-button color="primary" (click)="openNewComplaintDialog()">
+              <p *ngIf="!hasActiveFilters() && !hasError">Vous n'avez pas encore créé de réclamation</p>
+              <p *ngIf="hasError" class="error-message">{{ errorMessage }}</p>
+              <button mat-raised-button color="primary" routerLink="/agent/Reclamation/new" *ngIf="!hasError">
                 <mat-icon>add</mat-icon>
                 Créer ma première réclamation
+              </button>
+              <button mat-button (click)="loadComplaints()" *ngIf="hasError">
+                <mat-icon>refresh</mat-icon>
+                Réessayer
               </button>
             </div>
           </mat-card>
@@ -255,7 +240,7 @@ interface Complaint {
       border-left: 4px solid;
     }
 
-    .stat-card.open {
+    .stat-card.pending {
       border-left-color: #f59e0b;
     }
 
@@ -345,52 +330,32 @@ interface Complaint {
       height: 1rem;
     }
 
-    .resolution-section {
+    .complaint-content {
       margin-top: 1rem;
       padding: 1rem;
-      background: #f0fdf4;
+      background: #f8fafc;
       border-radius: 8px;
-      border-left: 4px solid #10b981;
+      border-left: 4px solid #e5e7eb;
     }
 
-    .resolution-section h4 {
-      margin: 0 0 0.5rem 0;
-      color: #065f46;
-      font-size: 0.875rem;
-    }
-
-    .resolution-section p {
+    .complaint-content p {
       margin: 0;
-      color: #047857;
-      font-size: 0.875rem;
+      color: #374151;
+      line-height: 1.5;
     }
 
-    .priority-high,
-    .priority-urgent {
-      color: #dc2626 !important;
-    }
-
-    .priority-medium {
-      color: #f59e0b !important;
-    }
-
-    .priority-low {
-      color: #059669 !important;
-    }
-
-    .mat-chip.status-open {
+    .mat-chip.status-en-attente {
       background-color: #fef3c7 !important;
       color: #92400e !important;
     }
 
-    .mat-chip.status-assigned,
-    .mat-chip.status-in-progress {
+    .mat-chip.status-en-cours {
       background-color: #dbeafe !important;
       color: #1e40af !important;
     }
 
-    .mat-chip.status-resolved,
-    .mat-chip.status-closed {
+    .mat-chip.status-resolue,
+    .mat-chip.status-fermee {
       background-color: #d1fae5 !important;
       color: #065f46 !important;
     }
@@ -422,6 +387,11 @@ interface Complaint {
 
     .empty-state p {
       margin-bottom: 2rem;
+    }
+
+    .error-message {
+      color: #dc2626;
+      font-weight: 500;
     }
 
     @media (max-width: 768px) {
@@ -458,146 +428,159 @@ interface Complaint {
         gap: 0.5rem;
       }
     }
+
+    /* Success/Error snackbar styles */
+    ::ng-deep .success-snackbar {
+      background: #d1fae5 !important;
+      color: #065f46 !important;
+      border-left: 4px solid #10b981 !important;
+    }
+
+    ::ng-deep .error-snackbar {
+      background: #fee2e2 !important;
+      color: #991b1b !important;
+      border-left: 4px solid #dc2626 !important;
+    }
   `]
 })
 export class AgentComplaintsComponent implements OnInit {
   complaints: Complaint[] = [];
   filteredComplaints: Complaint[] = [];
   isLoading = true;
+  hasError = false;
+  errorMessage = '';
   searchTerm = '';
   selectedStatus = '';
-  selectedCategory = '';
 
-  // Mock data
-  private mockComplaints: Complaint[] = [
-    {
-      id: '1',
-      title: 'Problème de connexion à la plateforme',
-      description: 'Je n\'arrive pas à me connecter depuis ce matin, le site affiche une erreur 500.',
-      category: 'Technique',
-      status: 'OPEN',
-      priority: 'HIGH',
-      createdAt: new Date(2024, 0, 15),
-      updatedAt: new Date(2024, 0, 15)
-    },
-    {
-      id: '2',
-      title: 'Délai de traitement trop long',
-      description: 'Ma demande de congé est en attente depuis plus de 2 semaines sans réponse.',
-      category: 'Service',
-      status: 'IN_PROGRESS',
-      priority: 'MEDIUM',
-      createdAt: new Date(2024, 0, 10),
-      updatedAt: new Date(2024, 0, 12),
-      assignedTo: 'Support Technique'
-    },
-    {
-      id: '3',
-      title: 'Erreur dans le calcul des remboursements',
-      description: 'Le montant calculé pour mon remboursement médical ne correspond pas aux factures jointes.',
-      category: 'Facturation',
-      status: 'RESOLVED',
-      priority: 'HIGH',
-      createdAt: new Date(2024, 0, 5),
-      updatedAt: new Date(2024, 0, 8),
-      assignedTo: 'Service Comptabilité',
-      resolution: 'Erreur corrigée, nouveau calcul effectué. Le remboursement sera traité dans les 48h.'
-    }
-  ];
-
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private complaintService: ComplaintService,
+    private router: Router,
+    private snackBar: MatSnackBar
+  ) {}
 
   ngOnInit(): void {
     this.loadComplaints();
   }
 
   loadComplaints(): void {
-    // Simulate API call
-    setTimeout(() => {
-      this.complaints = this.mockComplaints;
-      this.applyFilters();
-      this.isLoading = false;
-    }, 1000);
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/auth/login']);
+      return;
+    }
+
+    this.isLoading = true;
+    this.hasError = false;
+    this.errorMessage = '';
+
+    // Note: Your backend only has getComplaintByUser() method which returns a single complaint
+    // You'll need to add an endpoint to get all complaints for the user, or modify this
+    this.complaintService.getComplaintByUser().subscribe({
+      next: (complaint: ReclamationResponse) => {
+        console.log('Loaded user complaint:', complaint);
+        
+        // Convert single complaint to array format for consistency with UI
+        if (complaint) {
+          this.complaints = [this.mapBackendComplaint(complaint)];
+        } else {
+          this.complaints = [];
+        }
+        
+        this.applyFilters();
+        this.isLoading = false;
+      },
+      error: (error: any) => {
+        this.isLoading = false;
+        this.hasError = true;
+        
+        console.error('Error loading complaints:', error);
+        
+        if (error.status === 401) {
+          this.errorMessage = 'Session expirée. Redirection...';
+          this.authService.logout();
+          this.router.navigate(['/auth/login']);
+        } else if (error.status === 404) {
+          // No complaints found - this is normal for new users
+          this.complaints = [];
+          this.hasError = false;
+          this.applyFilters();
+        } else {
+          this.errorMessage = error.userMessage || 'Erreur lors du chargement des réclamations';
+          this.snackBar.open(this.errorMessage, 'Fermer', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+        }
+      }
+    });
+  }
+
+  private mapBackendComplaint(backendComplaint: ReclamationResponse): Complaint {
+    return {
+      id: backendComplaint.id || 0,
+      objet: backendComplaint.objet,
+      contenu: backendComplaint.contenu,
+      statut: backendComplaint.statut as StatutReclamation,
+      dateSoumission: backendComplaint.dateSoumission,
+      lastModifiedDate: backendComplaint.lastModifiedDate
+    };
   }
 
   applyFilters(): void {
     this.filteredComplaints = this.complaints.filter(complaint => {
       const matchesSearch = !this.searchTerm || 
-        complaint.title.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        complaint.description.toLowerCase().includes(this.searchTerm.toLowerCase());
+        complaint.objet.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        complaint.contenu.toLowerCase().includes(this.searchTerm.toLowerCase());
       
-      const matchesStatus = !this.selectedStatus || complaint.status === this.selectedStatus;
-      const matchesCategory = !this.selectedCategory || complaint.category === this.selectedCategory;
+      const matchesStatus = !this.selectedStatus || complaint.statut === this.selectedStatus;
       
-      return matchesSearch && matchesStatus && matchesCategory;
+      return matchesSearch && matchesStatus;
     });
   }
 
   clearFilters(): void {
     this.searchTerm = '';
     this.selectedStatus = '';
-    this.selectedCategory = '';
     this.applyFilters();
   }
 
   hasActiveFilters(): boolean {
-    return !!this.searchTerm || !!this.selectedStatus || !!this.selectedCategory;
+    return !!this.searchTerm || !!this.selectedStatus;
   }
 
   getComplaintsByStatus(status: string): Complaint[] {
-    return this.complaints.filter(complaint => complaint.status === status);
+    return this.complaints.filter(complaint => complaint.statut === status);
   }
 
-  getStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      'OPEN': 'Ouverte',
-      'ASSIGNED': 'Assignée',
-      'IN_PROGRESS': 'En cours',
-      'RESOLVED': 'Résolue',
-      'CLOSED': 'Fermée'
-    };
-    return labels[status] || status;
+  getStatusLabel(status: StatutReclamation): string {
+    return this.complaintService.formatStatus(status);
   }
 
-  getStatusClass(status: string): string {
+  getStatusClass(status: StatutReclamation): string {
     return `status-${status.toLowerCase().replace('_', '-')}`;
   }
 
-  getPriorityLabel(priority: string): string {
-    const labels: Record<string, string> = {
-      'LOW': 'Faible',
-      'MEDIUM': 'Normale',
-      'HIGH': 'Élevée',
-      'URGENT': 'Urgente'
-    };
-    return labels[priority] || priority;
-  }
-
-  getPriorityIcon(priority: string): string {
-    const icons: Record<string, string> = {
-      'LOW': 'keyboard_arrow_down',
-      'MEDIUM': 'remove',
-      'HIGH': 'keyboard_arrow_up',
-      'URGENT': 'priority_high'
-    };
-    return icons[priority] || 'remove';
-  }
-
-  getPriorityIconClass(priority: string): string {
-    return `priority-${priority.toLowerCase()}`;
-  }
-
   canEditComplaint(complaint: Complaint): boolean {
-    return complaint.status === 'OPEN';
+    return complaint.statut === StatutReclamation.EN_ATTENTE;
   }
 
-  viewComplaint(id: string): void {
-    // Navigate to complaint detail
-    console.log('View complaint:', id);
+  formatDate(dateString: string): string {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return dateString;
+    }
   }
 
-  openNewComplaintDialog(): void {
-    // Open dialog or navigate to new complaint form
-    console.log('Open new complaint dialog');
+  viewComplaint(id: number): void {
+    // Navigate to complaint detail - you'll need to implement this route
+    this.router.navigate(['/agent/Reclamation', id]);
   }
 }

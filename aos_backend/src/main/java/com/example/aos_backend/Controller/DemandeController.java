@@ -13,13 +13,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.example.aos_backend.Controller.DemandeRequest;
 import com.example.aos_backend.Service.DemandeService;
-import com.example.aos_backend.Service.EmailService;
 import com.example.aos_backend.user.Demande;
 import com.example.aos_backend.user.StatutDemande;
-
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 

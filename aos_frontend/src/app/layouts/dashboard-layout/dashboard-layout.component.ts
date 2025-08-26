@@ -57,7 +57,7 @@ import { AuthService } from '../../services/auth.service';
               </a>
 
               <!-- Complaints -->
-              <a mat-list-item routerLink="/agent/complaints" routerLinkActive="active" class="sidebar-link">
+              <a mat-list-item routerLink="/agent/Reclamation" routerLinkActive="active" class="sidebar-link">
                 <mat-icon matListItemIcon>support_agent</mat-icon>
                 <span matListItemTitle>Réclamations</span>
               </a>

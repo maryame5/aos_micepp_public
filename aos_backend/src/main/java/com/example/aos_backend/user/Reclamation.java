@@ -33,22 +33,10 @@ public class Reclamation {
     private LocalDateTime dateSoumission;
 
     @ManyToOne
-    @JoinColumn(name = "agent_id", nullable = false)
-    private Agent agent;
-
-    @ManyToOne
-    @JoinColumn(name = "support_id")
-    private Support support;
-
-    @ManyToOne
-    @JoinColumn(name = "admin_id")
-    private Admin admin;
+    @JoinColumn(name = "utilisateur_id", nullable = false)
+    private Utilisateur utilisateur;
 
     @LastModifiedDate
     @Column(name = "updated_date", insertable = false)
     private LocalDateTime lastModifiedDate;
-}
-
-enum StatutReclamation {
-    EN_ATTENTE, AFFECTEE, EN_COURS, CLOTUREE
 }

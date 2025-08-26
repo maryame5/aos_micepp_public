@@ -73,8 +73,13 @@ export const routes: Routes = [
         data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },
       {
-        path: 'complaints',
+        path: 'Reclamation',
         loadComponent: () => import('./pages/agent/complaints/agent-complaints.component').then(m => m.AgentComplaintsComponent),
+        data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
+      },
+      {
+        path: 'Reclamation/new',
+        loadComponent: () => import('./pages/agent/new-complaint/new_complaint.component').then(m => m.NewComplaintComponent),
         data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },
       {

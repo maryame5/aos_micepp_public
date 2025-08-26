@@ -15,7 +15,7 @@ import { PageHeaderComponent } from '../../../components/shared/page-header/page
 import { RequestService } from '../../../services/request.service';
 import { DemandeService, DemandeRequest } from '../../../services/demande.service';
 import { AuthService } from '../../../services/auth.service';
-import { Service, RequestPriority } from '../../../models/request.model';
+import { Service, RequestPriority, ServiceRequest } from '../../../models/request.model';
 import { FileUploadService, UploadProgress, UploadResponse } from '../../../services/file-upload.service';
 
 @Component({
@@ -614,11 +614,9 @@ export class NewRequestComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private requestService: RequestService,
-    private demandeService: DemandeService,
     private authService: AuthService,
     private router: Router,
-    private snackBar: MatSnackBar,
-    private fileUploadService: FileUploadService
+    private snackBar: MatSnackBar
   ) {
     this.serviceForm = this.fb.group({
       serviceId: ['', Validators.required]
@@ -715,17 +713,13 @@ export class NewRequestComponent implements OnInit {
     event.preventDefault();
     event.stopPropagation();
     this.isDragOver = false;
-    
     const files = event.dataTransfer?.files;
-    if (files) {
-      this.addFiles(files);
-    }
+    if (files) this.addFiles(files);
   }
 
   private addFiles(files: FileList): void {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      // Check file type
       if (!this.isValidFileType(file)) {
         this.snackBar.open(`Type de fichier non supporté: ${file.name}`, 'Fermer', {
           duration: 3000,
@@ -733,8 +727,6 @@ export class NewRequestComponent implements OnInit {
         });
         continue;
       }
-      
-      // Check file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         this.snackBar.open(`Fichier trop volumineux: ${file.name} (max 10MB)`, 'Fermer', {
           duration: 3000,
@@ -742,8 +734,6 @@ export class NewRequestComponent implements OnInit {
         });
         continue;
       }
-      
-      // Check if file already exists
       if (this.uploadedFiles.some(f => f.name === file.name)) {
         this.snackBar.open(`Fichier déjà sélectionné: ${file.name}`, 'Fermer', {
           duration: 3000,
@@ -751,7 +741,6 @@ export class NewRequestComponent implements OnInit {
         });
         continue;
       }
-      
       this.uploadedFiles.push(file);
     }
   }
@@ -815,11 +804,8 @@ export class NewRequestComponent implements OnInit {
   }
 
   submitRequest(): void {
-    // Mark all fields as touched to trigger validation display
     this.serviceForm.markAllAsTouched();
     this.requestForm.markAllAsTouched();
-    
-    // Check if service is selected
     if (!this.selectedService) {
       this.snackBar.open('Veuillez sélectionner un service avant de soumettre', 'Fermer', {
         duration: 3000,
@@ -827,181 +813,57 @@ export class NewRequestComponent implements OnInit {
       });
       return;
     }
-
-    // Check if required documents are uploaded
     if (this.selectedService.requiredDocuments && this.selectedService.requiredDocuments.length > 0) {
       const uploadedDocNames = this.uploadedFiles.map(file => file.name.toLowerCase());
       const missingDocs = this.selectedService.requiredDocuments.filter(doc => 
         !uploadedDocNames.some(uploaded => uploaded.includes(doc.toLowerCase()) || doc.toLowerCase().includes(uploaded))
       );
       
-      if (missingDocs.length > 0) {
-        this.snackBar.open(`Documents requis manquants: ${missingDocs.join(', ')}`, 'Fermer', {
-          duration: 5000,
-          panelClass: ['warning-snackbar']
-        });
-        return;
-      }
     }
-    
     if (this.serviceForm.valid && this.requestForm.valid && !this.isSubmitting) {
       this.isSubmitting = true;
-
-      // First upload files if any
-      if (this.uploadedFiles.length > 0) {
-        this.uploadFilesAndCreateRequest();
-      } else {
-        // Create request without files
-        this.createRequest([]);
-      }
-    } else {
-      // Show validation errors
-      this.snackBar.open('Veuillez corriger les erreurs de validation avant de soumettre', 'Fermer', {
-        duration: 3000,
-        panelClass: ['error-snackbar']
-      });
-    }
-  }
-
-  private uploadFilesAndCreateRequest(): void {
-    console.log('Starting upload process with', this.uploadedFiles.length, 'files');
-    
-    // Show upload progress message
-    this.snackBar.open('Téléversement des documents en cours...', 'Fermer', {
+      this.snackBar.open('Création de la demande en cours...', 'Fermer', {
       duration: 2000,
       panelClass: ['info-snackbar']
     });
 
-    // Try to upload files first using the file upload service
-    this.fileUploadService.uploadDocuments(this.uploadedFiles).subscribe({
-      next: (uploadResponse: UploadResponse) => {
-        console.log('Files uploaded successfully:', uploadResponse);
-        console.log('Document paths received:', uploadResponse.documentPaths);
-        
-        if (uploadResponse.success && uploadResponse.documentPaths && uploadResponse.documentPaths.length > 0) {
-          // Files were uploaded successfully, create request with actual document paths
-          console.log('✅ Using uploaded document paths:', uploadResponse.documentPaths);
-          this.createRequest(uploadResponse.documentPaths);
-        } else {
-          // Upload response indicates failure, fallback to file names
-          console.log('⚠️ Upload response indicates failure, falling back to file names');
-          const fileNames = this.uploadedFiles.map(file => file.name);
-          this.createRequest(fileNames);
-        }
-      },
-      error: (uploadError: any) => {
-        console.error('Error uploading files:', uploadError);
-        console.log('Upload error status:', uploadError.status);
-        console.log('Upload error details:', uploadError);
-        
-        // Only use fallback for specific error statuses that indicate endpoint issues
-        const fallbackStatuses = [0, 404, 501, 405, 502, 503, 504];
-        console.log('Checking if status', uploadError.status, 'is in fallback statuses:', fallbackStatuses);
-        
-        if (fallbackStatuses.includes(uploadError.status)) {
-          console.log(`✅ Upload endpoint not available (status: ${uploadError.status}), proceeding with file names`);
-          
-          let message = 'Téléversement des documents non disponible, création de la demande avec les noms des fichiers';
-          if (uploadError.status === 0) {
-            message = 'Endpoint de téléversement non implémenté, création de la demande avec les noms des fichiers';
-          } else if (uploadError.status === 404) {
-            message = 'Endpoint de téléversement non trouvé, création de la demande avec les noms des fichiers';
-          } else if (uploadError.status === 500) {
-            message = 'Erreur serveur lors du téléversement, création de la demande avec les noms des fichiers';
-          }
-          
-          this.snackBar.open(message, 'Fermer', {
-            duration: 4000,
-            panelClass: ['warning-snackbar']
-          });
-          
-          // Proceed with creating the request using file names
-          const fileNames = this.uploadedFiles.map(file => file.name);
-          console.log('✅ Proceeding with fallback using file names:', fileNames);
-          this.createRequest(fileNames);
-        } else {
-          console.log('❌ Status not in fallback list, showing error');
-          this.isSubmitting = false;
-          this.snackBar.open('Erreur lors du téléversement des documents', 'Fermer', {
-            duration: 5000,
-            panelClass: ['error-snackbar']
-          });
-        }
-      }
-    });
-  }
-
-  private createRequest(documentPaths: string[]): void {
-    console.log('=== CREATE REQUEST CALLED ===');
-    console.log('Creating request with document paths:', documentPaths);
-    console.log('Document paths type:', typeof documentPaths);
-    console.log('Document paths length:', documentPaths.length);
-    
-    // Prepare request data
-    const demandeRequest: DemandeRequest = {
-      serviceId: parseInt(this.serviceForm.value.serviceId),
-      commentaire: this.requestForm.value.description,
-      documentsJustificatifs: documentPaths,
+      const request: Partial<ServiceRequest> = {
+        serviceId: this.serviceForm.value.serviceId,
+        description: this.requestForm.value.description,
+        title: `Demande pour ${this.selectedService.name}`,
+        userId: this.authService.getCurrentUser()?.id || '',
+        priority: RequestPriority.MEDIUM,
       serviceData: this.getServiceData()
     };
 
-    console.log('Submitting request:', demandeRequest);
-
-    this.demandeService.createDemande(demandeRequest).subscribe({
+      this.requestService.createRequest(request, this.uploadedFiles).subscribe({
       next: (response) => {
         this.isSubmitting = false;
-        console.log('Request created successfully:', response);
-        
-        // Check if the request was actually created successfully
-        if (response && (response.id || response.success)) {
           this.snackBar.open('Demande créée avec succès!', 'Fermer', {
             duration: 3000,
             panelClass: ['success-snackbar']
           });
           this.router.navigate(['/agent/requests']);
-        } else {
-          // Handle case where response doesn't indicate success
-          this.snackBar.open('Demande créée mais confirmation manquante', 'Fermer', {
-            duration: 3000,
-            panelClass: ['warning-snackbar']
-          });
-          this.router.navigate(['/agent/requests']);
-        }
       },
       error: (error) => {
         this.isSubmitting = false;
-        console.error('Erreur lors de la création de la demande:', error);
-        
-        // Check if the error is actually a success (sometimes backend returns error status even on success)
-        if (error.error && (error.error.id || error.error.success)) {
-          this.snackBar.open('Demande créée avec succès!', 'Fermer', {
-            duration: 3000,
-            panelClass: ['success-snackbar']
-          });
-          this.router.navigate(['/agent/requests']);
-        } else if (error.status === 201 || error.status === 200) {
-          // Sometimes the backend returns success status but in error callback
-          this.snackBar.open('Demande créée avec succès!', 'Fermer', {
-            duration: 3000,
-            panelClass: ['success-snackbar']
-          });
-          this.router.navigate(['/agent/requests']);
-        } else {
-          // Show error only if request was not created
           this.snackBar.open('Erreur lors de la création de la demande', 'Fermer', {
             duration: 5000,
             panelClass: ['error-snackbar']
           });
         }
-      }
-    });
+      });
+        } else {
+      this.snackBar.open('Veuillez corriger les erreurs de validation avant de soumettre', 'Fermer', {
+        duration: 3000,
+            panelClass: ['error-snackbar']
+          });
+        }
   }
 
   private getServiceData(): { [key: string]: any } {
     const serviceData: { [key: string]: any } = {};
-    
     if (this.selectedService && this.selectedService.formFields) {
-      // Ajouter les champs dynamiques du formulaire
       this.selectedService.formFields.forEach(field => {
         const value = this.requestForm.get(field.name)?.value;
         if (value !== null && value !== undefined && value !== '') {
@@ -1009,8 +871,6 @@ export class NewRequestComponent implements OnInit {
         }
       });
     }
-    
-    console.log('Service data:', serviceData);
     return serviceData;
   }
 }

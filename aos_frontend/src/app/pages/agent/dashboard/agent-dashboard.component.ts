@@ -130,7 +130,7 @@ import { User } from '../../../models/user.model';
                     <div class="action-icon">📋</div>
                     <span>Mes demandes</span>
                   </button>
-                  <button class="quick-action-btn" routerLink="/agent/complaints">
+                  <button class="quick-action-btn" routerLink="/agent/Reclamation">
                     <div class="action-icon">⚠️</div>
                     <span>Réclamations</span>
                   </button>
