@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,9 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.aos_backend.Controller.DemandeRequest;
 import com.example.aos_backend.Repository.DemandeRepository;
 import com.example.aos_backend.Repository.ServiceRepository;
+import com.example.aos_backend.Repository.StorageRepository;
 import com.example.aos_backend.Repository.UtilisateurRepository;
+import com.example.aos_backend.Util.DocumentUtil;
 import com.example.aos_backend.user.*;
 
 import io.jsonwebtoken.io.IOException;
@@ -29,10 +32,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DemandeService {
 
+    @Autowired
     private final DemandeRepository demandeRepository;
+    @Autowired
     private final UtilisateurRepository userRepository;
+    @Autowired
     private final ServiceRepository serviceRepository;
+    @Autowired
     private final UtilisateurRepository utilisateurRepository;
+    @Autowired
+    private final StorageRepository storageRepository;
 
     @Transactional
     public Demande createDemande(DemandeRequest request, List<MultipartFile> files) throws java.io.IOException {
@@ -75,17 +84,16 @@ public class DemandeService {
                 if (!file.isEmpty()) {
                     try {
                         byte[] fileContent = file.getBytes();
-                        log.info(
-                                "____________________________________________________________________________________________________________________________________________________________________________________________________________________________________---File: {}, Size: {} bytes, Content: {}________________________________________________________________________________________",
-                                file.getOriginalFilename(),
-                                fileContent.length, file.getBytes());
+
                         DocumentJustificatif doc = DocumentJustificatif.builder()
                                 .fileName(file.getOriginalFilename())
                                 .contentType(file.getContentType())
-                                .content(file.getBytes())
+                                .content(DocumentUtil.compressDocument(file.getBytes()))
                                 .uploadedAt(LocalDateTime.now())
                                 .demande(demande)
                                 .build();
+
+                        storageRepository.save(doc);
                         documents.add(doc);
                         log.info("Prepared document: {} ({} bytes)", file.getOriginalFilename(), fileContent.length);
                     } catch (IOException e) {
@@ -121,6 +129,7 @@ public class DemandeService {
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
         List<Demande> demandes = demandeRepository.findByUtilisateur(utilisateur);
+
         log.info("Retrieved {} demandes for user: {}", demandes.size(), userEmail);
         return demandes;
     }

@@ -453,9 +453,7 @@ export class RequestDetailComponent implements OnInit {
 
   downloadDocument(documentId: string, demandeId: string, fileName: string): void {
     this.demandeService.downloadDocument(parseInt(demandeId), parseInt(documentId)).subscribe({
-
-      next: (blob: Blob | MediaSource) => {
-
+      next: (blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -463,8 +461,7 @@ export class RequestDetailComponent implements OnInit {
         a.click();
         window.URL.revokeObjectURL(url);
       },
-
-
+      error: (error) => {
         console.error('Error downloading document:', error);
         alert('Erreur lors du téléchargement du document');
       }

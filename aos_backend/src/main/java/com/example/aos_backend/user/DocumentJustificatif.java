@@ -2,6 +2,9 @@ package com.example.aos_backend.user;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,5 +34,6 @@ public class DocumentJustificatif {
 
     @ManyToOne
     @JoinColumn(name = "demande_id", nullable = false)
+    @JsonBackReference
     private Demande demande;
 }

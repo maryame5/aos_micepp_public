@@ -22,24 +22,7 @@ export class RequestService {
     private fileUploadService: FileUploadService
   ) {}
 
-  getRequests(): Observable<ServiceRequest[]> {
-    return this.demandeService.getAllDemandes().pipe(
-      switchMap(demandes => {
-        if (!demandes || demandes.length === 0) return of([]);
-        const serviceRequests = demandes.map(demande =>
-          this.backendServiceService.getServiceById(demande.service.id).pipe(
-            map(service => this.convertDemandeToServiceRequestWithFullService(demande, service)),
-            catchError(() => of(this.convertDemandeToServiceRequest(demande)))
-          )
-        );
-        return forkJoin(serviceRequests);
-      }),
-      catchError(error => {
-        console.error('Error fetching requests:', error);
-        return of([]);
-      })
-    );
-  }
+ 
 
   getRequestById(id: string): Observable<ServiceRequest | undefined> {
     return this.demandeService.getDemandeById(parseInt(id)).pipe(
@@ -76,50 +59,38 @@ export class RequestService {
     );
   }
 
-  createRequest(request: Partial<ServiceRequest>, files: File[]): Observable<ServiceRequest> {
+    createRequest(request: Partial<ServiceRequest>, files: File[]): Observable<ServiceRequest> {
     const demandeRequest: DemandeRequest = {
       serviceId: parseInt(request.serviceId!),
       commentaire: request.description!,
       serviceData: this.extractServiceData(request)
     };
 
+    // Use the fixed createDemande method from DemandeService
     return this.demandeService.createDemande(demandeRequest, files).pipe(
-      map(response => ({
-        id: response.id.toString(),
-
-        userId: request.userId!,
-        serviceId: request.serviceId!,
-        title: request.title!,
-        description: request.description!,
-        status: RequestStatus.PENDING,
-        priority: request.priority || RequestPriority.MEDIUM,
-
-        documents: files.map((file, index) => ({
-          id: `${index}`,
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          url: '', // URL will be set when fetching the demande
-          uploadedAt: new Date()
-        })),
-
-          comments: [],
-          createdAt: new Date(),
-          updatedAt: new Date()
-
-      })),
+      map(demande => {
+        console.log('Create demande response:', demande); // Debug log
+        return this.convertDemandeToServiceRequest(demande);
+      }),
       catchError(error => {
-        console.error('Error creating request:', error);
+        console.error('Error creating request - Full error:', error);
+
         throw error;
       })
     );
   }
 
+  // This method should work fine as it uses BackendServiceService
   getServices(): Observable<Service[]> {
     return this.backendServiceService.getAllServices().pipe(
-      map(backendServices => this.convertBackendServicesToServices(backendServices)),
+      map(backendServices => {
+        console.log('Fetched backend services:', backendServices); // Debug log
+        return this.convertBackendServicesToServices(backendServices);
+      }),
       catchError(error => {
-        console.error('Error fetching services:', error);
+        console.error('Error fetching services - Full error:', error);
+        console.error('Error status:', error.status);
+        console.error('Error message:', error.message);
         return of([]);
       })
     );
@@ -184,7 +155,6 @@ export class RequestService {
     };
   }
 
-  // Fixed method to handle DocumentJustificatif objects instead of string paths
   private convertDocumentJustificatifs(documentsJustificatifs: DocumentJustificatif[] | undefined, demandeId: number): Document[] {
     if (!documentsJustificatifs || documentsJustificatifs.length === 0) {
       return [];
@@ -201,6 +171,10 @@ export class RequestService {
   }
 
   private convertBackendServicesToServices(backendServices: BackendService[]): Service[] {
+    if (!backendServices || !Array.isArray(backendServices)) {
+      console.warn('Invalid backend services data:', backendServices);
+      return [];
+    }
     return backendServices.map(backendService => this.convertBackendServiceToService(backendService));
   }
 

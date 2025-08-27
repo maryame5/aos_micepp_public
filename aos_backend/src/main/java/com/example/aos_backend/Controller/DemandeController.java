@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.aos_backend.Controller.DemandeRequest;
 
 import com.example.aos_backend.Service.DemandeService;
+import com.example.aos_backend.Util.DocumentUtil;
 import com.example.aos_backend.user.Demande;
 import com.example.aos_backend.user.DocumentJustificatif;
 import com.example.aos_backend.user.StatutDemande;
@@ -40,16 +41,16 @@ public class DemandeController {
 
     @PostMapping(value = "/nouveau_demande", consumes = "multipart/form-data")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<String> createDemande(
+    public ResponseEntity<Demande> createDemande(
             @RequestPart DemandeRequest request,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         try {
             Demande demande = demandeService.createDemande(request, files);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body("Demande created successfully with ID: " + demande.getId());
+                    .body(demande);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error creating demande: " + e.getMessage());
+                    .body(null);
         }
     }
 
@@ -79,7 +80,6 @@ public class DemandeController {
         }
     }
 
-    // ✅ Nouveau endpoint pour récupérer les données spécifiques d'une demande
     @GetMapping("/{id}/service-data")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Object>> getDemandeServiceData(@PathVariable Long id) {
@@ -106,6 +106,8 @@ public class DemandeController {
         headers.setContentType(MediaType.parseMediaType(document.getContentType()));
         headers.setContentDisposition(ContentDisposition.attachment().filename(document.getFileName()).build());
 
-        return new ResponseEntity<>(document.getContent(), headers, HttpStatus.OK);
+        byte[] content = DocumentUtil.decompressDocument(document.getContent());
+
+        return new ResponseEntity<>(content, HttpStatus.OK);
     }
 }

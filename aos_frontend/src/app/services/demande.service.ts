@@ -78,17 +78,16 @@ export class DemandeService {
   constructor(private http: HttpClient) {}
 
   private getAuthHeaders(): HttpHeaders {
-    const token = localStorage.getItem('jwt_token');
+    const token = localStorage.getItem('aos_token');
     return new HttpHeaders({
       'Authorization': token ? `Bearer ${token}` : ''
     });
-  }
+    }
 
   /**
    * Create a new demande with files using multipart/form-data
-   * This matches your backend's expected format
    */
-  createDemande(request: DemandeRequest, files: File[]): Observable<any> {
+  createDemande(request: DemandeRequest, files: File[]): Observable<Demande> {
     const formData = new FormData();
     
     // Add the JSON request as a blob part
@@ -104,27 +103,24 @@ export class DemandeService {
       });
     }
 
-    const headers = new HttpHeaders({
-      'Authorization': localStorage.getItem('jwt_token') ? `Bearer ${localStorage.getItem('jwt_token')}` : ''
-      // Don't set Content-Type - let browser set it with boundary for multipart
-    });
+    
 
-    return this.http.post(`${this.apiUrl}/nouveau_demande`, formData, {
-      headers: headers
+    return this.http.post<Demande>(`${this.apiUrl}/nouveau_demande`, formData, {
+      headers: new HttpHeaders({
+      Authorization: `Bearer ${localStorage.getItem('aos_token')}`
+    })
     });
   }
 
   getUserDemandes(): Observable<Demande[]> {
     return this.http.get<Demande[]>(this.apiUrl, {
-      headers: this.getAuthHeaders()
+      headers: new HttpHeaders({
+      Authorization: `Bearer ${localStorage.getItem('aos_token')}`
+    })
     });
   }
 
-  getAllDemandes(): Observable<Demande[]> {
-    return this.http.get<Demande[]>(`${this.apiUrl}/all`, {
-      headers: this.getAuthHeaders()
-    });
-  }
+
 
   getDemandeById(id: number): Observable<Demande> {
     return this.http.get<Demande>(`${this.apiUrl}/${id}`, {
