@@ -71,10 +71,7 @@ import { DemandeService } from '../../../services/demande.service';
                   <span>{{ request.createdAt | date:'dd/MM/yyyy à HH:mm' }}</span>
                 </div>
 
-                <div class="info-item" *ngIf="request.updatedAt !== request.createdAt">
-                  <label>Dernière modification</label>
-                  <span>{{ request.updatedAt | date:'dd/MM/yyyy à HH:mm' }}</span>
-                </div>
+
 
                 <div class="info-item" *ngIf="request.dueDate">
                   <label>Date d'échéance</label>

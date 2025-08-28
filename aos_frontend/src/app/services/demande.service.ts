@@ -13,16 +13,16 @@ export interface DocumentJustificatif {
   id: number;
   fileName: string;
   contentType: string;
-  uploadedAt?: string;
+  uploadedAt?: Date;
 }
 
 export interface Demande {
   id: number;
-  dateSoumission: string;
+  dateSoumission: Date;
   statut: 'EN_ATTENTE' | 'EN_COURS' | 'ACCEPTEE' | 'REFUSEE';
   commentaire: string;
   documentsJustificatifs: DocumentJustificatif[];
-  documentReponse?: string;
+  documentReponse?: DocumentJustificatif;
   utilisateur?: {
     id: number;
     email: string;
@@ -32,9 +32,10 @@ export interface Demande {
   service: {
     id: number;
     nom: string;
-    type?: string;
+   
   };
-  lastModifiedDate?: string;
+ 
+
 }
 
 export interface DemandeServiceData {

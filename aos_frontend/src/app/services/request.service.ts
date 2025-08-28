@@ -127,8 +127,7 @@ export class RequestService {
       documents: this.convertDocumentJustificatifs(demande.documentsJustificatifs, demande.id),
       comments: [],
       createdAt: new Date(demande.dateSoumission),
-      updatedAt: demande.lastModifiedDate ? new Date(demande.lastModifiedDate) : new Date(demande.dateSoumission),
-      serviceData: {
+     serviceData: {
         serviceType: service.type,
         serviceName: service.nom,
         serviceTitle: service.title,
@@ -151,7 +150,7 @@ export class RequestService {
       documents: this.convertDocumentJustificatifs(demande.documentsJustificatifs, demande.id),
       comments: [],
       createdAt: new Date(demande.dateSoumission),
-      updatedAt: demande.lastModifiedDate ? new Date(demande.lastModifiedDate) : new Date(demande.dateSoumission)
+    
     };
   }
 

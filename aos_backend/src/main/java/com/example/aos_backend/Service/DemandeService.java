@@ -15,12 +15,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.aos_backend.Controller.DemandeRequest;
 import com.example.aos_backend.Repository.DemandeRepository;
 import com.example.aos_backend.Repository.ServiceRepository;
 import com.example.aos_backend.Repository.StorageRepository;
 import com.example.aos_backend.Repository.UtilisateurRepository;
 import com.example.aos_backend.Util.DocumentUtil;
+import com.example.aos_backend.dto.DemandeDTO;
+import com.example.aos_backend.dto.DemandeRequest;
+import com.example.aos_backend.dto.DocumentJustificatifDto;
 import com.example.aos_backend.user.*;
 
 import io.jsonwebtoken.io.IOException;
@@ -122,16 +124,93 @@ public class DemandeService {
         return demande;
     }
 
-    public List<Demande> getDemandebyUserId() {
+    public List<DemandeDTO> getDemandebyUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
         Utilisateur utilisateur = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
         List<Demande> demandes = demandeRepository.findByUtilisateur(utilisateur);
+        log.info("Found {} demandes for user {}", demandes.size(), utilisateur.getEmail());
 
-        log.info("Retrieved {} demandes for user: {}", demandes.size(), userEmail);
-        return demandes;
+        System.out.println("Found " + demandes.size() + " demandes for user " + utilisateur.getEmail());
+        System.out.println(demandes.toString());
+        System.out.println(demandes.iterator());
+
+        System.out.println("Demandes: " + Arrays.toString(demandes.toArray()));
+        System.out.println();
+        System.out.println("Demandes: " + demandes);
+        for (Demande d : demandes) {
+            System.out.println("==== DEMANDE ====");
+            System.out.println("ID: " + d.getId());
+            System.out.println("Commentaire: " + d.getCommentaire());
+            System.out.println("Statut: " + d.getStatut());
+            System.out.println("DateSoumission: " + d.getDateSoumission());
+
+            System.out.println("Utilisateur: " + d.getUtilisateur().getId() + " - " + d.getUtilisateur().getEmail());
+            System.out.println("Service: " + d.getService().getId() + " - " + d.getService().getNom());
+
+            // Vérifier si la liste des documents est null ou vide
+            if (d.getDocumentsJustificatifs() == null) {
+                System.out.println("DocumentsJustificatifs: NULL");
+            } else if (d.getDocumentsJustificatifs().isEmpty()) {
+                System.out.println("DocumentsJustificatifs: EMPTY");
+            } else {
+                System.out.println("DocumentsJustificatifs count = " + d.getDocumentsJustificatifs().size());
+                for (DocumentJustificatif doc : d.getDocumentsJustificatifs()) {
+                    System.out.println("  -> Document ID: " + doc.getId() +
+                            ", FileName: " + doc.getFileName() +
+                            ", ContentType: " + doc.getContentType() +
+                            ", UploadedAt: " + doc.getUploadedAt());
+                }
+            }
+
+            // Vérifier document réponse
+            if (d.getDocumentReponse() != null) {
+                System.out.println("DocumentReponse ID: " + d.getDocumentReponse().getId() +
+                        ", FileName: " + d.getDocumentReponse().getFileName());
+            } else {
+                System.out.println("DocumentReponse: NULL");
+            }
+        }
+
+        try {
+            return demandes.stream().map(d -> DemandeDTO.builder()
+                    .id(d.getId())
+                    .commentaire(d.getCommentaire())
+                    .statut(d.getStatut().name())
+                    .dateSoumission(d.getDateSoumission())
+                    .utilisateurId(d.getUtilisateur().getId())
+                    .utilisateurNom(d.getUtilisateur().fullname())
+                    .utilisateurEmail(d.getUtilisateur().getEmail())
+                    .serviceId(d.getService().getId())
+                    .serviceNom(d.getService().getNom())
+                    .documentsJustificatifs(d.getDocumentsJustificatifs() != null
+                            ? d.getDocumentsJustificatifs().stream()
+                                    .map(doc -> DocumentJustificatifDto.builder()
+                                            .id(doc.getId())
+                                            .fileName(doc.getFileName())
+                                            .contentType(doc.getContentType())
+                                            .uploadedAt(doc.getUploadedAt() != null ? doc.getUploadedAt() : null)
+                                            .build())
+                                    .toList()
+                            : List.of())
+                    .documentReponse(d.getDocumentReponse() != null
+                            ? DocumentJustificatifDto.builder()
+                                    .id(d.getDocumentReponse().getId())
+                                    .fileName(d.getDocumentReponse().getFileName())
+                                    .contentType(d.getDocumentReponse().getContentType())
+                                    .uploadedAt(d.getDocumentReponse().getUploadedAt() != null
+                                            ? d.getDocumentReponse().getUploadedAt()
+                                            : null)
+                                    .build()
+                            : null)
+                    .build()).toList();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     public Optional<Demande> getDemandeById(Long id) {

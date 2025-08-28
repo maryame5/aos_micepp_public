@@ -21,10 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.aos_backend.Controller.DemandeRequest;
-
 import com.example.aos_backend.Service.DemandeService;
 import com.example.aos_backend.Util.DocumentUtil;
+import com.example.aos_backend.dto.DemandeDTO;
+import com.example.aos_backend.dto.DemandeRequest;
 import com.example.aos_backend.user.Demande;
 import com.example.aos_backend.user.DocumentJustificatif;
 import com.example.aos_backend.user.StatutDemande;
@@ -56,9 +56,10 @@ public class DemandeController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Demande>> getDemandes() {
+    public ResponseEntity<List<DemandeDTO>> getDemandes() {
         try {
-            List<Demande> demandes = demandeService.getDemandebyUserId();
+            List<DemandeDTO> demandes = demandeService.getDemandebyUserId();
+            System.out.println("Demandes récupérées : " + demandes);
             return ResponseEntity.ok(demandes);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);

@@ -1,4 +1,4 @@
-package com.example.aos_backend.Controller;
+package com.example.aos_backend.dto;
 
 import java.util.List;
 import java.util.Map;

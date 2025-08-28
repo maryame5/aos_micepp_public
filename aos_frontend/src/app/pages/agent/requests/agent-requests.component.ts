@@ -128,10 +128,7 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
                   <mat-icon>event</mat-icon>
                   <span>Créée le {{ demande.dateSoumission | date:'dd/MM/yyyy' }}</span>
                 </div>
-                <div class="meta-item" *ngIf="demande.lastModifiedDate && demande.lastModifiedDate !== demande.dateSoumission">
-                  <mat-icon>update</mat-icon>
-                  <span>Modifiée le {{ demande.lastModifiedDate | date:'dd/MM/yyyy' }}</span>
-                </div>
+              
                 <div class="meta-item" *ngIf="demande.documentsJustificatifs && demande.documentsJustificatifs.length > 0">
                   <mat-icon>attach_file</mat-icon>
                   <span>{{ demande.documentsJustificatifs.length }} document(s)</span>

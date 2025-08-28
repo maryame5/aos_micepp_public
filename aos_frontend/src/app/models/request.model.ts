@@ -8,7 +8,7 @@ export interface ServiceRequest {
   priority: RequestPriority;
   documents: Document[];
   createdAt: Date;
-  updatedAt: Date;
+  
   assignedTo?: string;
   comments: Comment[];
   dueDate?: Date;
