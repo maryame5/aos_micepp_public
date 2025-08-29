@@ -1,5 +1,5 @@
 export interface ServiceRequest {
-  id: string;
+  id: number;
   userId: string;
   serviceId: string;
   title: string;

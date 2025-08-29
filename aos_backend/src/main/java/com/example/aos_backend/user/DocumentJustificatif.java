@@ -14,6 +14,7 @@ import lombok.*;
 @NoArgsConstructor
 @Entity
 @Table(name = "document_justificatif")
+@ToString(exclude = { "demande" })
 public class DocumentJustificatif {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

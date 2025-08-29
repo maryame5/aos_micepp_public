@@ -111,7 +111,7 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
             <mat-card-header>
               <div class="request-header-content">
                 <div class="request-title-section">
-                  <mat-card-title>{{ demande.service.nom || 'Service non défini' }}</mat-card-title>
+                  <mat-card-title>{{ demande.serviceNom || 'Service non défini' }}</mat-card-title>
                   <mat-card-subtitle>{{ demande.commentaire | slice:0:150 }}<span *ngIf="demande.commentaire.length > 150">...</span></mat-card-subtitle>
                 </div>
                 <div class="request-status">
@@ -135,7 +135,7 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
                 </div>
                 <div class="meta-item">
                   <mat-icon>category</mat-icon>
-                  <span>ID Service: {{ demande.service.id }}</span>
+                  <span>ID Service: {{ demande.serviceId }}</span>
                 </div>
               </div>
             </mat-card-content>
@@ -462,7 +462,7 @@ export class AgentRequestsComponent implements OnInit {
     this.filteredRequests = this.requests.filter(demande => {
       const matchesSearch = !this.searchTerm || 
         demande.commentaire.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        demande.service.nom.toLowerCase().includes(this.searchTerm.toLowerCase());
+        demande.serviceId.toString().includes(this.searchTerm.toLowerCase()) ;
       
       const matchesStatus = !this.selectedStatus || demande.statut === this.selectedStatus;
       

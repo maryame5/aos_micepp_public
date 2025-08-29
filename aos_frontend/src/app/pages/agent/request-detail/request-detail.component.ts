@@ -448,8 +448,8 @@ export class RequestDetailComponent implements OnInit {
     }
   }
 
-  downloadDocument(documentId: string, demandeId: string, fileName: string): void {
-    this.demandeService.downloadDocument(parseInt(demandeId), parseInt(documentId)).subscribe({
+  downloadDocument(documentId: string, demandeId: number, fileName: string): void {
+    this.demandeService.downloadDocument(demandeId, parseInt(documentId)).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');

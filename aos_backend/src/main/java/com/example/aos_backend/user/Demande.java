@@ -21,6 +21,7 @@ import lombok.*;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "demande")
+@ToString(exclude = { "documentsJustificatifs", "documentReponse" })
 public class Demande {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

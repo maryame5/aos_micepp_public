@@ -28,7 +28,7 @@ export class RequestService {
     return this.demandeService.getDemandeById(parseInt(id)).pipe(
       switchMap(demande => {
         if (!demande) return of(undefined);
-        return this.backendServiceService.getServiceById(demande.service.id).pipe(
+        return this.backendServiceService.getServiceById(demande.serviceId).pipe(
           map(service => this.convertDemandeToServiceRequestWithFullService(demande, service)),
           catchError(() => of(this.convertDemandeToServiceRequest(demande)))
         );
@@ -45,7 +45,7 @@ export class RequestService {
       switchMap(demandes => {
         if (!demandes || demandes.length === 0) return of([]);
         const serviceRequests = demandes.map(demande =>
-          this.backendServiceService.getServiceById(demande.service.id).pipe(
+          this.backendServiceService.getServiceById(demande.serviceId).pipe(
             map(service => this.convertDemandeToServiceRequestWithFullService(demande, service)),
             catchError(() => of(this.convertDemandeToServiceRequest(demande)))
           )
@@ -106,8 +106,8 @@ export class RequestService {
     );
   }
 
-  getServiceSpecificData(serviceId: string, demandeId: string): Observable<any> {
-    return this.demandeService.getDemandeServiceData(parseInt(demandeId)).pipe(
+  getServiceSpecificData(serviceId: string, demandeId: number): Observable<any> {
+    return this.demandeService.getDemandeServiceData(demandeId).pipe(
       catchError(error => {
         console.error('Error fetching service specific data:', error);
         return of({});
@@ -117,9 +117,9 @@ export class RequestService {
 
   private convertDemandeToServiceRequestWithFullService(demande: Demande, service: BackendService): ServiceRequest {
     return {
-      id: demande.id.toString(),
+      id: demande.id,
       userId: demande.utilisateur?.id?.toString() || '',
-      serviceId: demande.service.id.toString(),
+      serviceId: demande.serviceId.toString(),
       title: `Demande ${service.title || service.nom}`,
       description: demande.commentaire,
       status: this.convertBackendStatusToFrontend(demande.statut),
@@ -140,10 +140,10 @@ export class RequestService {
 
   private convertDemandeToServiceRequest(demande: Demande): ServiceRequest {
     return {
-      id: demande.id.toString(),
+      id: demande.id,
       userId: demande.utilisateur?.id?.toString() || '',
-      serviceId: demande.service.id.toString(),
-      title: `Demande ${demande.service.nom}`,
+      serviceId: demande.serviceId.toString(),
+      title: `Demande ${demande.serviceNom}`,
       description: demande.commentaire,
       status: this.convertBackendStatusToFrontend(demande.statut),
       priority: RequestPriority.MEDIUM,

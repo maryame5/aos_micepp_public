@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -59,7 +60,6 @@ public class DemandeController {
     public ResponseEntity<List<DemandeDTO>> getDemandes() {
         try {
             List<DemandeDTO> demandes = demandeService.getDemandebyUserId();
-            System.out.println("Demandes récupérées : " + demandes);
             return ResponseEntity.ok(demandes);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
@@ -68,14 +68,11 @@ public class DemandeController {
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Demande> getDemandeById(@PathVariable Long id) {
+    public ResponseEntity<DemandeDTO> getDemandeById(@PathVariable Long id) {
         try {
-            Optional<Demande> demande = demandeService.getDemandeById(id);
-            if (demande.isPresent()) {
-                return ResponseEntity.ok(demande.get());
-            } else {
-                return ResponseEntity.notFound().build();
-            }
+            DemandeDTO demande = demandeService.getDemandeById(id);
+            return ResponseEntity.ok(demande);
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
@@ -94,9 +91,9 @@ public class DemandeController {
 
     @GetMapping("/{demandeId}/documents/{documentId}")
     @PreAuthorize("isAuthenticated()")
+    @Transactional
     public ResponseEntity<byte[]> downloadDocument(@PathVariable Long demandeId, @PathVariable Long documentId) {
-        Demande demande = demandeService.getDemandeById(demandeId)
-                .orElseThrow(() -> new RuntimeException("Demande non trouvée"));
+        Demande demande = demandeService.getDemandById(demandeId);
 
         DocumentJustificatif document = demande.getDocumentsJustificatifs().stream()
                 .filter(doc -> doc.getId().equals(documentId))

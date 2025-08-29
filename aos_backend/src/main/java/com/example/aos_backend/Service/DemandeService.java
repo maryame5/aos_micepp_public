@@ -124,6 +124,7 @@ public class DemandeService {
         return demande;
     }
 
+    @Transactional
     public List<DemandeDTO> getDemandebyUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
@@ -134,10 +135,11 @@ public class DemandeService {
         log.info("Found {} demandes for user {}", demandes.size(), utilisateur.getEmail());
 
         System.out.println("Found " + demandes.size() + " demandes for user " + utilisateur.getEmail());
-        System.out.println(demandes.toString());
-        System.out.println(demandes.iterator());
 
-        System.out.println("Demandes: " + Arrays.toString(demandes.toArray()));
+        log.info("Demandes details: {}", demandes);
+        demandes.forEach(d -> log.info("Demande ID: {}, Commentaire: {}, Statut: {}, DateSoumission: {}",
+                d.getId(), d.getCommentaire(), d.getStatut(), d.getDateSoumission()));
+
         System.out.println();
         System.out.println("Demandes: " + demandes);
         for (Demande d : demandes) {
@@ -213,10 +215,58 @@ public class DemandeService {
         }
     }
 
-    public Optional<Demande> getDemandeById(Long id) {
-        return demandeRepository.findById(id);
+    @Transactional
+    public Demande getDemandById(Long id) {
+        return demandeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Demande non trouvée pour l'ID: " + id));
     }
 
+    @Transactional
+    public DemandeDTO getDemandeById(Long id) {
+        Optional<Demande> demandeOpt = demandeRepository.findById(id);
+        if (demandeOpt.isEmpty()) {
+            throw new RuntimeException("Demande not found for ID: " + id);
+        }
+        Demande d = demandeOpt.get();
+        log.info("Fetched demande: {}", d);
+        log.info("Utilisateur: {} - {}", d.getUtilisateur().getId(), d.getUtilisateur().getEmail());
+        log.info("Service: {} - {}", d.getService().getId(), d.getService().getNom());
+        log.info("documents justificatif list: {}", d.getDocumentsJustificatifs());
+        log.info("DocumentsJustificatifs: {}", d.getDocumentsJustificatifs().size());
+        return DemandeDTO.builder()
+                .id(d.getId())
+                .commentaire(d.getCommentaire())
+                .statut(d.getStatut().name())
+                .dateSoumission(d.getDateSoumission())
+                .utilisateurId(d.getUtilisateur().getId())
+                .utilisateurNom(d.getUtilisateur().fullname())
+                .utilisateurEmail(d.getUtilisateur().getEmail())
+                .serviceId(d.getService().getId())
+                .serviceNom(d.getService().getNom())
+                .documentsJustificatifs(d.getDocumentsJustificatifs() != null
+                        ? d.getDocumentsJustificatifs().stream()
+                                .map(doc -> DocumentJustificatifDto.builder()
+                                        .id(doc.getId())
+                                        .fileName(doc.getFileName())
+                                        .contentType(doc.getContentType())
+                                        .uploadedAt(doc.getUploadedAt() != null ? doc.getUploadedAt() : null)
+                                        .build())
+                                .toList()
+                        : List.of())
+                .documentReponse(d.getDocumentReponse() != null
+                        ? DocumentJustificatifDto.builder()
+                                .id(d.getDocumentReponse().getId())
+                                .fileName(d.getDocumentReponse().getFileName())
+                                .contentType(d.getDocumentReponse().getContentType())
+                                .uploadedAt(d.getDocumentReponse().getUploadedAt() != null
+                                        ? d.getDocumentReponse().getUploadedAt()
+                                        : null)
+                                .build()
+                        : null)
+                .build();
+    }
+
+    @Transactional
     public Map<String, Object> getDemandeServiceData(Long demandeId) {
         Optional<Demande> demandeOpt = demandeRepository.findById(demandeId);
         if (demandeOpt.isEmpty()) {

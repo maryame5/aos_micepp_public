@@ -26,14 +26,11 @@ export interface Demande {
   utilisateur?: {
     id: number;
     email: string;
-    nom?: string;
-    prenom?: string;
+    fullname?: string;
+  
   };
-  service: {
-    id: number;
-    nom: string;
-   
-  };
+  serviceId: number;
+  serviceNom: string;
  
 
 }
