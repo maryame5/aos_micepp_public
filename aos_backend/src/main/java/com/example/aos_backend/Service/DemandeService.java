@@ -41,8 +41,6 @@ public class DemandeService {
     @Autowired
     private final ServiceRepository serviceRepository;
     @Autowired
-    private final UtilisateurRepository utilisateurRepository;
-    @Autowired
     private final StorageRepository storageRepository;
 
     @Transactional

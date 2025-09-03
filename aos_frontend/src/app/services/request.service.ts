@@ -13,7 +13,7 @@ import { FileUploadService } from './file-upload.service';
   providedIn: 'root'
 })
 export class RequestService {
-  private apiUrl = environment.apiUrl;
+  
 
   constructor(
     private http: HttpClient,
@@ -28,6 +28,7 @@ export class RequestService {
     return this.demandeService.getDemandeById(parseInt(id)).pipe(
       switchMap(demande => {
         if (!demande) return of(undefined);
+        if (!demande.serviceId) return of(this.convertDemandeToServiceRequest(demande));
         return this.backendServiceService.getServiceById(demande.serviceId).pipe(
           map(service => this.convertDemandeToServiceRequestWithFullService(demande, service)),
           catchError(() => of(this.convertDemandeToServiceRequest(demande)))
@@ -119,9 +120,9 @@ export class RequestService {
     return {
       id: demande.id,
       userId: demande.utilisateur?.id?.toString() || '',
-      serviceId: demande.serviceId.toString(),
+      serviceId: demande.serviceId?.toString() || '',
       title: `Demande ${service.title || service.nom}`,
-      description: demande.commentaire,
+      description: demande.commentaire || '',
       status: this.convertBackendStatusToFrontend(demande.statut),
       priority: RequestPriority.MEDIUM,
       documents: this.convertDocumentJustificatifs(demande.documentsJustificatifs, demande.id),
@@ -141,16 +142,16 @@ export class RequestService {
   private convertDemandeToServiceRequest(demande: Demande): ServiceRequest {
     return {
       id: demande.id,
-      userId: demande.utilisateur?.id?.toString() || '',
-      serviceId: demande.serviceId.toString(),
-      title: `Demande ${demande.serviceNom}`,
-      description: demande.commentaire,
+      userId: demande.utilisateur?.id ? demande.utilisateur.id.toString() : '',
+      serviceId: demande.serviceId ? demande.serviceId.toString() : '',
+      title: `Demande ${demande.serviceNom || 'Service'}`,
+      description: demande.commentaire || '',
       status: this.convertBackendStatusToFrontend(demande.statut),
       priority: RequestPriority.MEDIUM,
       documents: this.convertDocumentJustificatifs(demande.documentsJustificatifs, demande.id),
       comments: [],
       createdAt: new Date(demande.dateSoumission),
-    
+
     };
   }
 
@@ -158,11 +159,11 @@ export class RequestService {
     if (!documentsJustificatifs || documentsJustificatifs.length === 0) {
       return [];
     }
-    
+
     return documentsJustificatifs.map((doc) => ({
-      id: doc.id.toString(),
-      name: doc.fileName,
-      type: doc.contentType,
+      id: doc.id?.toString() || '',
+      name: doc.fileName || '',
+      type: doc.contentType || '',
       size: 0, // Size not available from DocumentJustificatif
       url: `${environment.apiUrl}/demandes/${demandeId}/documents/${doc.id}`,
       uploadedAt: doc.uploadedAt ? new Date(doc.uploadedAt) : new Date()
@@ -179,11 +180,11 @@ export class RequestService {
 
   private convertBackendServiceToService(backendService: BackendService): Service {
     return {
-      id: backendService.id.toString(),
-      name: backendService.title || backendService.nom,
-      description: backendService.description,
-      category: backendService.type,
-      isActive: backendService.isActive,
+      id: backendService.id?.toString() || '',
+      name: backendService.title || backendService.nom || '',
+      description: backendService.description || '',
+      category: backendService.type || '',
+      isActive: backendService.isActive || false,
       formFields: backendService.formFields || [],
       requiredDocuments: backendService.requiredDocuments || []
     };
