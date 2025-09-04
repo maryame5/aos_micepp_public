@@ -55,13 +55,13 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
         <!-- Filters -->
         <mat-card class="filters-card">
           <div class="filters-container">
-            <mat-form-field appearance="outline">
+            <mat-form-field>
               <mat-label>Rechercher</mat-label>
               <input matInput [(ngModel)]="searchTerm" (input)="applyFilters()" placeholder="Titre ou description...">
               <mat-icon matSuffix>search</mat-icon>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field >
               <mat-label>Statut</mat-label>
               <mat-select [(value)]="selectedStatus" (selectionChange)="applyFilters()">
                 <mat-option value="">Tous les statuts</mat-option>

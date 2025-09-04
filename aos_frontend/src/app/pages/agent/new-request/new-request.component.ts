@@ -57,7 +57,7 @@ import { Service, RequestPriority, ServiceRequest } from '../../../models/reques
               </mat-card-header>
               <mat-card-content>
                 <form [formGroup]="serviceForm" class="service-form">
-                  <mat-form-field appearance="outline" class="full-width">
+                  <mat-form-field  class="full-width">
                     <mat-label>Service</mat-label>
                     <mat-select formControlName="serviceId" (selectionChange)="onServiceChange($event.value)">
                       <mat-option *ngFor="let service of services" [value]="service.id">
@@ -99,7 +99,7 @@ import { Service, RequestPriority, ServiceRequest } from '../../../models/reques
               </mat-card-header>
               <mat-card-content>
                 <form [formGroup]="requestForm" class="request-form">
-                  <mat-form-field appearance="outline" class="full-width">
+                  <mat-form-field  class="full-width">
                     <mat-label>Description générale</mat-label>
                     <textarea 
                       matInput 
@@ -115,7 +115,7 @@ import { Service, RequestPriority, ServiceRequest } from '../../../models/reques
                   <div class="dynamic-fields" *ngIf="selectedService && selectedService.formFields && selectedService.formFields.length > 0">
                     <h4>Informations spécifiques au service</h4>
                     <div *ngFor="let field of selectedService.formFields" class="dynamic-field">
-                      <mat-form-field appearance="outline" class="full-width">
+                      <mat-form-field  class="full-width">
                         <mat-label>{{ field.label }}</mat-label>
                         <input 
                           *ngIf="field.type === 'text' || field.type === 'email' || field.type === 'tel'"

@@ -52,7 +52,7 @@ import { User } from '../../../models/user.model';
                 <mat-card-content>
                   <form [formGroup]="profileForm" (ngSubmit)="updateProfile()" class="profile-form">
                     <div class="form-row">
-                      <mat-form-field appearance="outline" class="half-width">
+                      <mat-form-field  class="half-width">
                         <mat-label>Prénom</mat-label>
                         <input matInput formControlName="firstName" required>
                         <mat-error *ngIf="profileForm.get('firstName')?.hasError('required')">
@@ -60,7 +60,7 @@ import { User } from '../../../models/user.model';
                         </mat-error>
                       </mat-form-field>
 
-                      <mat-form-field appearance="outline" class="half-width">
+                      <mat-form-field  class="half-width">
                         <mat-label>Nom</mat-label>
                         <input matInput formControlName="lastName" required>
                         <mat-error *ngIf="profileForm.get('lastName')?.hasError('required')">
@@ -69,7 +69,7 @@ import { User } from '../../../models/user.model';
                       </mat-form-field>
                     </div>
 
-                    <mat-form-field appearance="outline" class="full-width">
+                    <mat-form-field  class="full-width">
                       <mat-label>Email</mat-label>
                       <input matInput type="email" formControlName="email" required>
                       <mat-icon matSuffix>email</mat-icon>
@@ -81,19 +81,19 @@ import { User } from '../../../models/user.model';
                       </mat-error>
                     </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="full-width">
+                    <mat-form-field  class="full-width">
                       <mat-label>Téléphone</mat-label>
                       <input matInput type="tel" formControlName="phoneNumber">
                       <mat-icon matSuffix>phone</mat-icon>
                     </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="full-width">
+                    <mat-form-field  class="full-width">
                       <mat-label>Adresse</mat-label>
                       <textarea matInput formControlName="address" rows="3"></textarea>
                       <mat-icon matSuffix>location_on</mat-icon>
                     </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="full-width">
+                    <mat-form-field  class="full-width">
                       <mat-label>Département</mat-label>
                       <input matInput formControlName="department" readonly>
                       <mat-icon matSuffix>business</mat-icon>
@@ -129,7 +129,7 @@ import { User } from '../../../models/user.model';
 
                 <mat-card-content>
                   <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="password-form">
-                    <mat-form-field appearance="outline" class="full-width">
+                    <mat-form-field  class="full-width">
                       <mat-label>Mot de passe actuel</mat-label>
                       <input matInput [type]="hideCurrentPassword ? 'password' : 'text'" formControlName="currentPassword" required>
                       <button mat-icon-button matSuffix (click)="hideCurrentPassword = !hideCurrentPassword" type="button">
@@ -140,7 +140,7 @@ import { User } from '../../../models/user.model';
                       </mat-error>
                     </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="full-width">
+                    <mat-form-field  class="full-width">
                       <mat-label>Nouveau mot de passe</mat-label>
                       <input matInput [type]="hideNewPassword ? 'password' : 'text'" formControlName="newPassword" required>
                       <button mat-icon-button matSuffix (click)="hideNewPassword = !hideNewPassword" type="button">
@@ -154,7 +154,7 @@ import { User } from '../../../models/user.model';
                       </mat-error>
                     </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="full-width">
+                    <mat-form-field  class="full-width">
                       <mat-label>Confirmer le nouveau mot de passe</mat-label>
                       <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword" required>
                       <button mat-icon-button matSuffix (click)="hideConfirmPassword = !hideConfirmPassword" type="button">

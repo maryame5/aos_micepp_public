@@ -53,7 +53,7 @@ interface ReclamationRequest {
           
           <mat-card-content>
             <form [formGroup]="complaintForm" class="complaint-form">
-              <mat-form-field appearance="outline" class="full-width">
+              <mat-form-field  class="full-width">
                 <mat-label>Objet de la réclamation *</mat-label>
                 <input 
                   matInput 
@@ -69,7 +69,7 @@ interface ReclamationRequest {
                 </mat-error>
               </mat-form-field>
 
-              <mat-form-field appearance="outline" class="full-width">
+              <mat-form-field  class="full-width">
                 <mat-label>Contenu détaillé de la réclamation *</mat-label>
                 <textarea 
                   matInput 

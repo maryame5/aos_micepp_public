@@ -58,13 +58,13 @@ interface Document {
         <!-- Filters -->
         <mat-card class="filters-card">
           <div class="filters-container">
-            <mat-form-field appearance="outline">
+            <mat-form-field >
               <mat-label>Rechercher</mat-label>
               <input matInput [(ngModel)]="searchTerm" (input)="applyFilters()" placeholder="Nom du document...">
               <mat-icon matSuffix>search</mat-icon>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field >
               <mat-label>Catégorie</mat-label>
               <mat-select [(value)]="selectedCategory" (selectionChange)="applyFilters()">
                 <mat-option value="">Toutes les catégories</mat-option>
@@ -76,7 +76,7 @@ interface Document {
               </mat-select>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field >
               <mat-label>Type de fichier</mat-label>
               <mat-select [(value)]="selectedType" (selectionChange)="applyFilters()">
                 <mat-option value="">Tous les types</mat-option>
