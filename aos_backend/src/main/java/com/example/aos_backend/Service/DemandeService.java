@@ -64,7 +64,7 @@ public class DemandeService {
         // Créer la demande SANS les documents d'abord
         Demande demande = Demande.builder()
                 .statut(StatutDemande.EN_ATTENTE)
-                .commentaire(request.getCommentaire())
+                .description(request.getDescription())
                 .documentsJustificatifs(new ArrayList<>()) // Liste vide pour commencer
                 .utilisateur(utilisateur)
                 .service(service)
@@ -136,14 +136,14 @@ public class DemandeService {
 
         log.info("Demandes details: {}", demandes);
         demandes.forEach(d -> log.info("Demande ID: {}, Commentaire: {}, Statut: {}, DateSoumission: {}",
-                d.getId(), d.getCommentaire(), d.getStatut(), d.getDateSoumission()));
+                d.getId(), d.getDescription(), d.getStatut(), d.getDateSoumission()));
 
         System.out.println();
         System.out.println("Demandes: " + demandes);
         for (Demande d : demandes) {
             System.out.println("==== DEMANDE ====");
             System.out.println("ID: " + d.getId());
-            System.out.println("Commentaire: " + d.getCommentaire());
+            System.out.println("Commentaire: " + d.getDescription());
             System.out.println("Statut: " + d.getStatut());
             System.out.println("DateSoumission: " + d.getDateSoumission());
 
@@ -177,7 +177,7 @@ public class DemandeService {
         try {
             return demandes.stream().map(d -> DemandeDTO.builder()
                     .id(d.getId())
-                    .commentaire(d.getCommentaire())
+                    .description(d.getDescription())
                     .statut(d.getStatut().name())
                     .dateSoumission(d.getDateSoumission())
                     .utilisateurId(d.getUtilisateur().getId())
@@ -233,7 +233,7 @@ public class DemandeService {
         log.info("DocumentsJustificatifs: {}", d.getDocumentsJustificatifs().size());
         return DemandeDTO.builder()
                 .id(d.getId())
-                .commentaire(d.getCommentaire())
+                .description(d.getDescription())
                 .statut(d.getStatut().name())
                 .dateSoumission(d.getDateSoumission())
                 .utilisateurId(d.getUtilisateur().getId())

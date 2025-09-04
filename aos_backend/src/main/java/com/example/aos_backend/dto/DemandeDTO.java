@@ -18,7 +18,7 @@ public class DemandeDTO {
     private LocalDateTime dateSoumission;
 
     private String statut;
-    private String commentaire;
+    private String description;
     private DocumentJustificatifDto documentReponse;
 
     private Integer utilisateurId;

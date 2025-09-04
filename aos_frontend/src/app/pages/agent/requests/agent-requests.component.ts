@@ -112,7 +112,7 @@ import { ServiceRequest, RequestStatus } from '../../../models/request.model';
               <div class="request-header-content">
                 <div class="request-title-section">
                   <mat-card-title>{{ demande.serviceNom || 'Service non défini' }}</mat-card-title>
-                  <mat-card-subtitle>{{ demande.commentaire | slice:0:150 }}<span *ngIf="demande.commentaire.length > 150">...</span></mat-card-subtitle>
+                  <mat-card-subtitle>{{ demande.description | slice:0:150 }}<span *ngIf="demande.description.length > 150">...</span></mat-card-subtitle>
                 </div>
                 <div class="request-status">
                   <mat-chip [class]="getStatusClass(demande.statut)">
@@ -461,7 +461,7 @@ export class AgentRequestsComponent implements OnInit {
   applyFilters(): void {
     this.filteredRequests = this.requests.filter(demande => {
       const matchesSearch = !this.searchTerm || 
-        demande.commentaire.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        demande.description.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         demande.serviceId.toString().includes(this.searchTerm.toLowerCase()) ;
       
       const matchesStatus = !this.selectedStatus || demande.statut === this.selectedStatus;

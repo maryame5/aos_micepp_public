@@ -34,8 +34,8 @@ public class Demande {
     @Enumerated(EnumType.STRING)
     private StatutDemande statut;
 
-    @Column(name = "commentaire")
-    private String commentaire;
+    @Column(name = "description")
+    private String description;
 
     @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonManagedReference

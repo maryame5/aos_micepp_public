@@ -15,6 +15,6 @@ import lombok.*;
 public class DemandeRequest {
 
     private Long serviceId;
-    private String commentaire;
+    private String description;
     private Map<String, Object> serviceData; // Données spécifiques au service
 }

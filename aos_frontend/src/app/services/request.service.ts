@@ -63,7 +63,7 @@ export class RequestService {
     createRequest(request: Partial<ServiceRequest>, files: File[]): Observable<ServiceRequest> {
     const demandeRequest: DemandeRequest = {
       serviceId: parseInt(request.serviceId!),
-      commentaire: request.description!,
+      description: request.description!,
       serviceData: this.extractServiceData(request)
     };
 
@@ -122,7 +122,7 @@ export class RequestService {
       userId: demande.utilisateur?.id?.toString() || '',
       serviceId: demande.serviceId?.toString() || '',
       title: `Demande ${service.title || service.nom}`,
-      description: demande.commentaire || '',
+      description: demande.description || '',
       status: this.convertBackendStatusToFrontend(demande.statut),
       priority: RequestPriority.MEDIUM,
       documents: this.convertDocumentJustificatifs(demande.documentsJustificatifs, demande.id),
@@ -145,7 +145,7 @@ export class RequestService {
       userId: demande.utilisateur?.id ? demande.utilisateur.id.toString() : '',
       serviceId: demande.serviceId ? demande.serviceId.toString() : '',
       title: `Demande ${demande.serviceNom || 'Service'}`,
-      description: demande.commentaire || '',
+      description: demande.description || '',
       status: this.convertBackendStatusToFrontend(demande.statut),
       priority: RequestPriority.MEDIUM,
       documents: this.convertDocumentJustificatifs(demande.documentsJustificatifs, demande.id),

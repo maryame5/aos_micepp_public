@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 
 export interface DemandeRequest {
   serviceId: number;
-  commentaire: string;
+  description: string;
   serviceData: { [key: string]: any };
 }
 
@@ -20,7 +20,7 @@ export interface Demande {
   id: number;
   dateSoumission: Date;
   statut: 'EN_ATTENTE' | 'EN_COURS' | 'ACCEPTEE' | 'REFUSEE';
-  commentaire: string;
+  description: string;
   documentsJustificatifs: DocumentJustificatif[];
   documentReponse?: DocumentJustificatif;
   utilisateur?: {
