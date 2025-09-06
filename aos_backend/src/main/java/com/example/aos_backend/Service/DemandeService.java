@@ -89,6 +89,7 @@ public class DemandeService {
                                 .fileName(file.getOriginalFilename())
                                 .contentType(file.getContentType())
                                 .content(DocumentUtil.compressDocument(file.getBytes()))
+                                .type("justificatif")
                                 .uploadedAt(LocalDateTime.now())
                                 .demande(demande)
                                 .build();
@@ -183,6 +184,7 @@ public class DemandeService {
                     .utilisateurId(d.getUtilisateur().getId())
                     .utilisateurNom(d.getUtilisateur().fullname())
                     .utilisateurEmail(d.getUtilisateur().getEmail())
+                    .commentaire(d.getCommentaire())
                     .serviceId(d.getService().getId())
                     .serviceNom(d.getService().getNom())
                     .documentsJustificatifs(d.getDocumentsJustificatifs() != null
@@ -191,6 +193,7 @@ public class DemandeService {
                                             .id(doc.getId())
                                             .fileName(doc.getFileName())
                                             .contentType(doc.getContentType())
+                                            .type(doc.getType())
                                             .uploadedAt(doc.getUploadedAt() != null ? doc.getUploadedAt() : null)
                                             .build())
                                     .toList()
@@ -200,6 +203,7 @@ public class DemandeService {
                                     .id(d.getDocumentReponse().getId())
                                     .fileName(d.getDocumentReponse().getFileName())
                                     .contentType(d.getDocumentReponse().getContentType())
+                                    .type(d.getDocumentReponse().getType())
                                     .uploadedAt(d.getDocumentReponse().getUploadedAt() != null
                                             ? d.getDocumentReponse().getUploadedAt()
                                             : null)
@@ -239,6 +243,7 @@ public class DemandeService {
                 .utilisateurId(d.getUtilisateur().getId())
                 .utilisateurNom(d.getUtilisateur().fullname())
                 .utilisateurEmail(d.getUtilisateur().getEmail())
+                .commentaire(d.getCommentaire())
                 .serviceId(d.getService().getId())
                 .serviceNom(d.getService().getNom())
                 .documentsJustificatifs(d.getDocumentsJustificatifs() != null
@@ -247,6 +252,7 @@ public class DemandeService {
                                         .id(doc.getId())
                                         .fileName(doc.getFileName())
                                         .contentType(doc.getContentType())
+                                        .type(doc.getType())
                                         .uploadedAt(doc.getUploadedAt() != null ? doc.getUploadedAt() : null)
                                         .build())
                                 .toList()
@@ -256,6 +262,7 @@ public class DemandeService {
                                 .id(d.getDocumentReponse().getId())
                                 .fileName(d.getDocumentReponse().getFileName())
                                 .contentType(d.getDocumentReponse().getContentType())
+                                .type(d.getDocumentReponse().getType())
                                 .uploadedAt(d.getDocumentReponse().getUploadedAt() != null
                                         ? d.getDocumentReponse().getUploadedAt()
                                         : null)

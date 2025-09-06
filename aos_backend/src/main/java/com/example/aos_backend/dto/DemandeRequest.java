@@ -16,5 +16,5 @@ public class DemandeRequest {
 
     private Long serviceId;
     private String description;
-    private Map<String, Object> serviceData; // Données spécifiques au service
+    private Map<String, Object> serviceData;
 }

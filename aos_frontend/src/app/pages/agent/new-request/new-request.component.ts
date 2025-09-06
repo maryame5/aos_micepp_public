@@ -260,7 +260,7 @@ import { Service, RequestPriority, ServiceRequest } from '../../../models/reques
                         </div>
                       </div>
                     </div>
-                    <p class="review-total-size">Taille totale: {{ getTotalFileSize() }}</p>
+                    <p class="review-total-size">Taille totale: {{ getAttachedDocumentsTotalSize() }}</p>
                   </div>
                 </div>
               </mat-card-content>
@@ -764,6 +764,33 @@ export class NewRequestComponent implements OnInit {
     return this.formatFileSize(totalBytes);
   }
 
+  get attachedDocuments(): File[] {
+    if (!this.selectedService || !this.selectedService.requiredDocuments) {
+      return this.uploadedFiles;
+    }
+    const justificativeNames = this.selectedService.requiredDocuments.map(doc => doc.toLowerCase());
+    return this.uploadedFiles.filter(file => {
+      const fileName = file.name.toLowerCase();
+      return !justificativeNames.some(just => fileName.includes(just) || just.includes(fileName));
+    });
+  }
+
+  get justificativeDocuments(): File[] {
+    if (!this.selectedService || !this.selectedService.requiredDocuments) {
+      return [];
+    }
+    const justificativeNames = this.selectedService.requiredDocuments.map(doc => doc.toLowerCase());
+    return this.uploadedFiles.filter(file => {
+      const fileName = file.name.toLowerCase();
+      return justificativeNames.some(just => fileName.includes(just) || just.includes(fileName));
+    });
+  }
+
+  getAttachedDocumentsTotalSize(): string {
+    const totalBytes = this.attachedDocuments.reduce((total, file) => total + file.size, 0);
+    return this.formatFileSize(totalBytes);
+  }
+
   getFileIcon(fileName: string): string {
     const extension = fileName.toLowerCase().split('.').pop();
     switch (extension) {
@@ -828,7 +855,7 @@ export class NewRequestComponent implements OnInit {
       serviceData: this.getServiceData()
     };
 
-      this.requestService.createRequest(request, this.uploadedFiles).subscribe({
+      this.requestService.createRequest(request, this.attachedDocuments).subscribe({
       next: (response) => {
         this.isSubmitting = false;
 

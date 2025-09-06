@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 
 @Data
 @Builder
@@ -21,7 +22,7 @@ import lombok.*;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "demande")
-@ToString(exclude = { "documentsJustificatifs", "documentReponse" })
+@ToString(exclude = { "documentsJustificatifs", "documentsReponse" })
 public class Demande {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,13 +40,17 @@ public class Demande {
 
     @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonManagedReference
+    @SQLRestriction("type = 'justificatif'")
     private List<DocumentJustificatif> documentsJustificatifs;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "document_reponse_id")
+    @SQLRestriction("type = 'reponse'")
     @JsonManagedReference
-
     private DocumentJustificatif documentReponse;
+
+    @Column(name = "commentaire")
+    private String commentaire;
 
     @ManyToOne
     @JoinColumn(name = "utilisateur_id", nullable = false)
@@ -54,6 +59,10 @@ public class Demande {
     @ManyToOne
     @JoinColumn(name = "service_id", nullable = false)
     private ServiceEntity service;
+
+    @ManyToOne
+    @JoinColumn(name = "assigned_to_id")
+    private Utilisateur assignedTo;
 
     @LastModifiedDate
     @Column(name = "updated_date", insertable = false)

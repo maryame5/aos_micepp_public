@@ -1,3 +1,4 @@
+
 package com.example.aos_backend.dto;
 
 import java.time.LocalDate;
@@ -20,6 +21,7 @@ public class DemandeDTO {
     private String statut;
     private String description;
     private DocumentJustificatifDto documentReponse;
+    private String commentaire;
 
     private Integer utilisateurId;
     private String utilisateurNom;
@@ -29,5 +31,8 @@ public class DemandeDTO {
 
     private String serviceNom;
     private Long serviceId;
+
+    private Integer assignedToId;
+    private String assignedToUsername;
 
 }
