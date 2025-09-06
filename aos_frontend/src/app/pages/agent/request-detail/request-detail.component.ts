@@ -5,13 +5,12 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
 import { PageHeaderComponent } from '../../../components/shared/page-header/page-header.component';
 import { LoadingComponent } from '../../../components/shared/loading/loading.component';
 import { RequestService } from '../../../services/request.service';
-import { ServiceRequest, RequestStatus } from '../../../models/request.model';
 import { DemandeService } from '../../../services/demande.service';
+import { ServiceRequest, RequestStatus } from '../../../models/request.model';
 
 @Component({
   selector: 'app-request-detail',
@@ -23,14 +22,13 @@ import { DemandeService } from '../../../services/demande.service';
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
-    MatTabsModule,
     MatDividerModule,
     PageHeaderComponent,
     LoadingComponent
   ],
   template: `
     <div class="request-detail-container">
-      <app-page-header 
+      <app-page-header
         [title]="request?.title || 'Détail de la demande'" 
         subtitle="Consultez les détails et le suivi de votre demande">
         <div slot="actions">
@@ -58,29 +56,33 @@ import { DemandeService } from '../../../services/demande.service';
                     {{ getStatusLabel(request.status) }}
                   </mat-chip>
                 </div>
-                
-                <div class="info-item">
-                  <label>Priorité</label>
-                  <mat-chip [class]="getPriorityClass(request.priority)">
-                    {{ getPriorityLabel(request.priority) }}
-                  </mat-chip>
-                </div>
-
                 <div class="info-item">
                   <label>Date de création</label>
                   <span>{{ request.createdAt | date:'dd/MM/yyyy à HH:mm' }}</span>
                 </div>
-
-
-
+                <div class="info-item" *ngIf="request.lastModifiedDate">
+                  <label>Dernière modification</label>
+                  <span>{{ request.lastModifiedDate | date:'dd/MM/yyyy à HH:mm' }}</span>
+                </div>
                 <div class="info-item" *ngIf="request.dueDate">
                   <label>Date d'échéance</label>
                   <span>{{ request.dueDate | date:'dd/MM/yyyy' }}</span>
                 </div>
-
-                <div class="info-item" *ngIf="request.assignedTo">
+                <div class="info-item" *ngIf="request.utilisateurNom">
+                  <label>Utilisateur</label>
+                  <span>{{ request.utilisateurNom }}</span>
+                </div>
+                <div class="info-item" *ngIf="request.utilisateurEmail">
+                  <label>Email</label>
+                  <span>{{ request.utilisateurEmail }}</span>
+                </div>
+                <div class="info-item" *ngIf="request.serviceNom">
+                  <label>Service</label>
+                  <span>{{ request.serviceNom }}</span>
+                </div>
+                <div class="info-item" *ngIf="request.assignedToUsername">
                   <label>Assigné à</label>
-                  <span>{{ request.assignedTo }}</span>
+                  <span>{{ request.assignedToUsername }}</span>
                 </div>
               </div>
 
@@ -111,8 +113,7 @@ import { DemandeService } from '../../../services/demande.service';
                   <mat-icon>{{ getFileIcon(doc.name) }}</mat-icon>
                   <div class="document-info">
                     <span class="document-name">{{ doc.name }}</span>
-                    <span class="document-size">{{ formatFileSize(doc.size) }}</span>
-                  </div>
+                     </div>
                   <button mat-icon-button (click)="downloadDocument(doc.id, request.id, doc.name)">
                     <mat-icon>download</mat-icon>
                   </button>
@@ -120,26 +121,55 @@ import { DemandeService } from '../../../services/demande.service';
               </div>
             </mat-card-content>
           </mat-card>
-        </div>
 
-        <!-- Comments/History -->
-        <mat-card class="comments-card" *ngIf="request.comments.length > 0">
+          </div>
+          <mat-card class="admin-comment-card" *ngIf="request.commentaire">
           <mat-card-header>
-            <mat-card-title>Historique et commentaires</mat-card-title>
+            <div class="comment-header">
+              <mat-icon class="quote-icon">format_quote</mat-icon>
+              <div class="comment-title-section">
+                <mat-card-title>Commentaire de l'admin</mat-card-title>
+              </div>
+            </div>
           </mat-card-header>
           <mat-card-content>
-            <div class="comments-list">
-              <div class="comment-item" *ngFor="let comment of request.comments">
-                <div class="comment-header">
-                  <span class="comment-author">{{ comment.userName }}</span>
-                  <span class="comment-date">{{ comment.createdAt | date:'dd/MM/yyyy à HH:mm' }}</span>
+            <div class="admin-comment-content">
+              <p class="comment-text">{{ request.commentaire }}</p>
+            </div>
+          </mat-card-content>
+        </mat-card>
+    
+
+          <!-- Response Document -->
+          <mat-card class="response-document-card" *ngIf="request.documentReponse">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon class="section-icon">description</mat-icon>
+                Document de réponse
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="response-document-content">
+                <div class="document-item response-doc-item">
+                  <mat-icon class="file-icon">{{ getFileIcon(request.documentReponse.name) }}</mat-icon>
+                  <div class="document-info">
+                    <span class="document-name">{{ request.documentReponse.name }}</span>
+                  </div>
+                  <button mat-icon-button color="primary" (click)="downloadDocument(request.documentReponse.id, request.id, request.documentReponse.name)">
+                    <mat-icon>download</mat-icon>
+                  </button>
                 </div>
-                <p class="comment-content">{{ comment.content }}</p>
-              </div>
+                <div class="response-note">
+                  <mat-icon class="info-icon">info</mat-icon>
+                  <span>Ce document contient la réponse officielle à votre demande</span>
+                </div>
             </div>
           </mat-card-content>
         </mat-card>
       </div>
+
+        <!-- Admin Comment Card -->
+
 
       <div class="empty-state" *ngIf="!isLoading && !request">
         <mat-icon class="empty-icon">assignment</mat-icon>
@@ -167,7 +197,8 @@ import { DemandeService } from '../../../services/demande.service';
 
     .request-info-card,
     .documents-card,
-    .comments-card {
+    .response-document-card,
+    .admin-comment-card {
       border-radius: 12px;
       border: none;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -243,39 +274,100 @@ import { DemandeService } from '../../../services/demande.service';
       color: #6b7280;
     }
 
-    .comments-list {
+    /* Response Document Styles */
+    .response-document-content {
       display: flex;
       flex-direction: column;
       gap: 1rem;
     }
 
-    .comment-item {
-      padding: 1rem;
-      border: 1px solid #e5e7eb;
+    .response-doc-item {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 2px solid #3b82f6;
+      border-radius: 12px;
+    }
+
+    .file-icon {
+      color: #3b82f6;
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .response-note {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      background: #f8fafc;
       border-radius: 8px;
+      border-left: 3px solid #3b82f6;
+    }
+
+    .info-icon {
+      color: #3b82f6;
+      font-size: 1.25rem;
+    }
+
+    .response-note span {
+      font-size: 0.875rem;
+      color: #374151;
+      font-weight: 500;
+    }
+
+    .section-icon {
+      margin-right: 0.5rem;
+      color: #3b82f6;
+    }
+    
+    /* Admin Comment Styles */
+    .admin-comment-card {
+      margin-bottom: 2rem;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border-left: 4px solid #3b82f6;
     }
 
     .comment-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.5rem;
+      gap: 1rem;
     }
 
-    .comment-author {
-      font-weight: 600;
-      color: #374151;
+    .comment-title-section {
+      flex: 1;
     }
 
-    .comment-date {
-      font-size: 0.875rem;
-      color: #6b7280;
+    .admin-comment-content {
+      position: relative;
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
-    .comment-content {
+    .quote-icon {
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      background: #3b82f6;
+      color: white;
+      border-radius: 50%;
+      padding: 8px;
+      font-size: 1.25rem;
+      width: 2rem;
+      height: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .comment-text {
       margin: 0;
-      color: #6b7280;
-      line-height: 1.6;
+      color: #374151;
+      line-height: 1.7;
+      font-size: 0.95rem;
+      padding-left: 1rem;
+      font-style: italic;
     }
 
     .mat-chip.status-pending {
@@ -288,7 +380,6 @@ import { DemandeService } from '../../../services/demande.service';
       color: #1e40af !important;
     }
 
-    .mat-chip.status-completed,
     .mat-chip.status-approved {
       background-color: #d1fae5 !important;
       color: #065f46 !important;
@@ -299,18 +390,27 @@ import { DemandeService } from '../../../services/demande.service';
       color: #991b1b !important;
     }
 
-    .mat-chip.priority-low {
+    .mat-chip.status-completed {
       background-color: #d1fae5 !important;
       color: #065f46 !important;
     }
 
-    .mat-chip.priority-medium {
+    .mat-chip.status-en-attente {
       background-color: #fef3c7 !important;
       color: #92400e !important;
     }
 
-    .mat-chip.priority-high,
-    .mat-chip.priority-urgent {
+    .mat-chip.status-en-cours {
+      background-color: #dbeafe !important;
+      color: #1e40af !important;
+    }
+
+    .mat-chip.status-acceptee {
+      background-color: #d1fae5 !important;
+      color: #065f46 !important;
+    }
+
+    .mat-chip.status-refusee {
       background-color: #fee2e2 !important;
       color: #991b1b !important;
     }
@@ -410,20 +510,6 @@ export class RequestDetailComponent implements OnInit {
 
   getStatusClass(status: RequestStatus): string {
     return `status-${status.toLowerCase().replace('_', '-')}`;
-  }
-
-  getPriorityLabel(priority: string): string {
-    const labels: Record<string, string> = {
-      'LOW': 'Faible',
-      'MEDIUM': 'Normale',
-      'HIGH': 'Élevée',
-      'URGENT': 'Urgente'
-    };
-    return labels[priority] || priority;
-  }
-
-  getPriorityClass(priority: string): string {
-    return `priority-${priority.toLowerCase()}`;
   }
 
   formatFileSize(bytes: number): string {

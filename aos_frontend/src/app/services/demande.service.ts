@@ -27,11 +27,17 @@ export interface Demande {
     id: number;
     email: string;
     fullname?: string;
-  
+
   };
   serviceId: number;
   serviceNom: string;
- 
+  commentaire?: string;
+  assignedTo?: {
+    id: number;
+    email: string;
+    fullname?: string;
+  };
+  lastModifiedDate?: Date;
 
 }
 

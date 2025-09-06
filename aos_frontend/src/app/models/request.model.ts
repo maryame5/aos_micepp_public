@@ -1,43 +1,9 @@
-export interface ServiceRequest {
-  id: number;
-  userId: string;
-  serviceId: string;
-  title: string;
-  description: string;
-  status: RequestStatus;
-  priority: RequestPriority;
-  documents: Document[];
-  createdAt: Date;
-  
-  assignedTo?: string;
-  comments: Comment[];
-  dueDate?: Date;
-  
-  // ✅ Nouvelles propriétés pour les données du service
-  serviceData?: {
-    serviceType?: string;
-    serviceName?: string;
-    serviceTitle?: string;
-    serviceDescription?: string;
-    serviceFeatures?: string[];
-    formFields?: FormField[];
-    specificData?: { [key: string]: any }; // Données spécifiques saisies par l'utilisateur
-  };
-}
-
 export enum RequestStatus {
   PENDING = 'PENDING',
   IN_PROGRESS = 'IN_PROGRESS',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
   COMPLETED = 'COMPLETED'
-}
-
-export enum RequestPriority {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-  URGENT = 'URGENT'
 }
 
 export interface Document {
@@ -47,16 +13,41 @@ export interface Document {
   size: number;
   url: string;
   uploadedAt: Date;
-  path?: string; // ✅ Chemin pour le téléchargement
 }
 
-export interface Comment {
-  id: string;
+export interface ServiceRequest {
+  id: number;
   userId: string;
-  userName: string;
-  content: string;
+  serviceId: string;
+  title: string;
+  description: string;
+  status: RequestStatus;
+  documents: Document[];
+  documentReponse?: Document; // Added for admin response document
+  commentaire?: string;
   createdAt: Date;
+  dueDate?: Date;
+  assignedTo?: string;
+  // Additional fields for comprehensive display
+  utilisateurNom?: string;
+  utilisateurEmail?: string;
+  serviceNom?: string;
+  assignedToUsername?: string;
+  lastModifiedDate?: Date;
+  serviceData?: {
+    serviceType?: string;
+    serviceName?: string;
+    serviceTitle?: string;
+    serviceDescription?: string;
+    serviceFeatures?: string[];
+    formFields?: any[];
+    specificData?: any;
+  };
 }
+
+
+
+
 
 export interface Service {
   id: string;

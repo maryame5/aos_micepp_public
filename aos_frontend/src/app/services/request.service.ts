@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, forkJoin, switchMap } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { ServiceRequest, RequestStatus, RequestPriority, Service, Document } from '../models/request.model';
+import { ServiceRequest, RequestStatus,  Service, Document } from '../models/request.model';
 import { environment } from '../../environments/environment';
 import { DemandeService, Demande, DemandeRequest, DocumentJustificatif } from './demande.service';
 import { BackendServiceService, BackendService } from './backend-service.service';
@@ -124,11 +124,18 @@ export class RequestService {
       title: `Demande ${service.title || service.nom}`,
       description: demande.description || '',
       status: this.convertBackendStatusToFrontend(demande.statut),
-      priority: RequestPriority.MEDIUM,
+
       documents: this.convertDocumentJustificatifs(demande.documentsJustificatifs, demande.id),
-      comments: [],
+      documentReponse: demande.documentReponse ? this.convertDocumentJustificatifToDocument(demande.documentReponse, demande.id) : undefined,
+      commentaire: demande.commentaire || '',
       createdAt: new Date(demande.dateSoumission),
-     serviceData: {
+      // Additional fields for comprehensive display
+      utilisateurNom: demande.utilisateur?.fullname || '',
+      utilisateurEmail: demande.utilisateur?.email || '',
+      serviceNom: service.nom || service.title || '',
+      assignedToUsername: demande.assignedTo?.fullname || '',
+      lastModifiedDate: demande.lastModifiedDate ? new Date(demande.lastModifiedDate) : new Date(demande.dateSoumission),
+       serviceData: {
         serviceType: service.type,
         serviceName: service.nom,
         serviceTitle: service.title,
@@ -147,9 +154,9 @@ export class RequestService {
       title: `Demande ${demande.serviceNom || 'Service'}`,
       description: demande.description || '',
       status: this.convertBackendStatusToFrontend(demande.statut),
-      priority: RequestPriority.MEDIUM,
+
       documents: this.convertDocumentJustificatifs(demande.documentsJustificatifs, demande.id),
-      comments: [],
+      commentaire: demande.commentaire || '',
       createdAt: new Date(demande.dateSoumission),
 
     };
@@ -168,6 +175,17 @@ export class RequestService {
       url: `${environment.apiUrl}/demandes/${demandeId}/documents/${doc.id}`,
       uploadedAt: doc.uploadedAt ? new Date(doc.uploadedAt) : new Date()
     }));
+  }
+
+  private convertDocumentJustificatifToDocument(documentJustificatif: DocumentJustificatif, demandeId: number): Document {
+    return {
+      id: documentJustificatif.id?.toString() || '',
+      name: documentJustificatif.fileName || '',
+      type: documentJustificatif.contentType || '',
+      size: 0, // Size not available from DocumentJustificatif
+      url: `${environment.apiUrl}/demandes/${demandeId}/documents/${documentJustificatif.id}`,
+      uploadedAt: documentJustificatif.uploadedAt ? new Date(documentJustificatif.uploadedAt) : new Date()
+    };
   }
 
   private convertBackendServicesToServices(backendServices: BackendService[]): Service[] {

@@ -45,21 +45,15 @@ public class DemandeService {
 
     @Transactional
     public Demande createDemande(DemandeRequest request, List<MultipartFile> files) throws java.io.IOException {
-        log.info("Creating demande for service ID: {}", request.getServiceId());
-
         // Récupérer l'utilisateur connecté
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
         Utilisateur utilisateur = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé: " + userEmail));
 
-        log.info("Found user: {} ({})", utilisateur.getEmail(), utilisateur.getId());
-
         // Récupérer le service
         ServiceEntity service = serviceRepository.findById(request.getServiceId())
                 .orElseThrow(() -> new RuntimeException("Service non trouvé: " + request.getServiceId()));
-
-        log.info("Found service: {} ({})", service.getNom(), service.getId());
 
         // Créer la demande SANS les documents d'abord
         Demande demande = Demande.builder()
@@ -73,11 +67,9 @@ public class DemandeService {
 
         // Sauvegarder la demande pour obtenir l'ID
         demande = demandeRepository.save(demande);
-        log.info("Created demande with ID: {}", demande.getId());
 
         // Maintenant traiter les fichiers uploadés
         if (files != null && !files.isEmpty()) {
-            log.info("Processing {} files", files.size());
             List<DocumentJustificatif> documents = new ArrayList<>();
 
             for (MultipartFile file : files) {
@@ -96,9 +88,7 @@ public class DemandeService {
 
                         storageRepository.save(doc);
                         documents.add(doc);
-                        log.info("Prepared document: {} ({} bytes)", file.getOriginalFilename(), fileContent.length);
                     } catch (IOException e) {
-                        log.error("Error processing file: {}", file.getOriginalFilename(), e);
                         throw new RuntimeException("Erreur lors de la lecture du fichier: " + e.getMessage());
                     }
                 }
@@ -109,17 +99,13 @@ public class DemandeService {
 
             // Sauvegarder à nouveau pour persister les documents
             demande = demandeRepository.save(demande);
-            log.info("Saved {} documents for demande ID: {}",
-                    demande.getDocumentsJustificatifs().size(), demande.getId());
         }
 
         // Traiter les données spécifiques au service
         if (request.getServiceData() != null && !request.getServiceData().isEmpty()) {
-            log.info("Processing service-specific data: {}", request.getServiceData());
             processServiceData(service, request.getServiceData(), demande);
         }
 
-        log.info("Demande created successfully with ID: {}", demande.getId());
         return demande;
     }
 
@@ -131,49 +117,6 @@ public class DemandeService {
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
         List<Demande> demandes = demandeRepository.findByUtilisateur(utilisateur);
-        log.info("Found {} demandes for user {}", demandes.size(), utilisateur.getEmail());
-
-        System.out.println("Found " + demandes.size() + " demandes for user " + utilisateur.getEmail());
-
-        log.info("Demandes details: {}", demandes);
-        demandes.forEach(d -> log.info("Demande ID: {}, Commentaire: {}, Statut: {}, DateSoumission: {}",
-                d.getId(), d.getDescription(), d.getStatut(), d.getDateSoumission()));
-
-        System.out.println();
-        System.out.println("Demandes: " + demandes);
-        for (Demande d : demandes) {
-            System.out.println("==== DEMANDE ====");
-            System.out.println("ID: " + d.getId());
-            System.out.println("Commentaire: " + d.getDescription());
-            System.out.println("Statut: " + d.getStatut());
-            System.out.println("DateSoumission: " + d.getDateSoumission());
-
-            System.out.println("Utilisateur: " + d.getUtilisateur().getId() + " - " + d.getUtilisateur().getEmail());
-            System.out.println("Service: " + d.getService().getId() + " - " + d.getService().getNom());
-
-            // Vérifier si la liste des documents est null ou vide
-            if (d.getDocumentsJustificatifs() == null) {
-                System.out.println("DocumentsJustificatifs: NULL");
-            } else if (d.getDocumentsJustificatifs().isEmpty()) {
-                System.out.println("DocumentsJustificatifs: EMPTY");
-            } else {
-                System.out.println("DocumentsJustificatifs count = " + d.getDocumentsJustificatifs().size());
-                for (DocumentJustificatif doc : d.getDocumentsJustificatifs()) {
-                    System.out.println("  -> Document ID: " + doc.getId() +
-                            ", FileName: " + doc.getFileName() +
-                            ", ContentType: " + doc.getContentType() +
-                            ", UploadedAt: " + doc.getUploadedAt());
-                }
-            }
-
-            // Vérifier document réponse
-            if (d.getDocumentReponse() != null) {
-                System.out.println("DocumentReponse ID: " + d.getDocumentReponse().getId() +
-                        ", FileName: " + d.getDocumentReponse().getFileName());
-            } else {
-                System.out.println("DocumentReponse: NULL");
-            }
-        }
 
         try {
             return demandes.stream().map(d -> DemandeDTO.builder()
@@ -181,6 +124,7 @@ public class DemandeService {
                     .description(d.getDescription())
                     .statut(d.getStatut().name())
                     .dateSoumission(d.getDateSoumission())
+                    .commentaire(d.getCommentaire())
                     .utilisateurId(d.getUtilisateur().getId())
                     .utilisateurNom(d.getUtilisateur().fullname())
                     .utilisateurEmail(d.getUtilisateur().getEmail())
@@ -230,15 +174,11 @@ public class DemandeService {
             throw new RuntimeException("Demande not found for ID: " + id);
         }
         Demande d = demandeOpt.get();
-        log.info("Fetched demande: {}", d);
-        log.info("Utilisateur: {} - {}", d.getUtilisateur().getId(), d.getUtilisateur().getEmail());
-        log.info("Service: {} - {}", d.getService().getId(), d.getService().getNom());
-        log.info("documents justificatif list: {}", d.getDocumentsJustificatifs());
-        log.info("DocumentsJustificatifs: {}", d.getDocumentsJustificatifs().size());
         return DemandeDTO.builder()
                 .id(d.getId())
                 .description(d.getDescription())
                 .statut(d.getStatut().name())
+                .commentaire((d.getCommentaire() != null) ? d.getCommentaire() : "")
                 .dateSoumission(d.getDateSoumission())
                 .utilisateurId(d.getUtilisateur().getId())
                 .utilisateurNom(d.getUtilisateur().fullname())
@@ -274,10 +214,6 @@ public class DemandeService {
     @Transactional
     public Map<String, Object> getDemandeServiceData(Long demandeId) {
         Optional<Demande> demandeOpt = demandeRepository.findById(demandeId);
-        if (demandeOpt.isEmpty()) {
-            log.warn("Demande not found for ID: {}", demandeId);
-            return new HashMap<>();
-        }
 
         Demande demande = demandeOpt.get();
         ServiceEntity service = demande.getService();

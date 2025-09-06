@@ -95,10 +95,18 @@ public class DemandeController {
     public ResponseEntity<byte[]> downloadDocument(@PathVariable Long demandeId, @PathVariable Long documentId) {
         Demande demande = demandeService.getDemandById(demandeId);
 
-        DocumentJustificatif document = demande.getDocumentsJustificatifs().stream()
+        // First check in regular documents
+        Optional<DocumentJustificatif> documentOpt = demande.getDocumentsJustificatifs().stream()
                 .filter(doc -> doc.getId().equals(documentId))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Document non trouvé"));
+                .findFirst();
+
+        // If not found in regular documents, check response document
+        if (!documentOpt.isPresent() && demande.getDocumentReponse() != null &&
+                demande.getDocumentReponse().getId().equals(documentId)) {
+            documentOpt = Optional.of(demande.getDocumentReponse());
+        }
+
+        DocumentJustificatif document = documentOpt.orElseThrow(() -> new RuntimeException("Document non trouvé"));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(document.getContentType()));

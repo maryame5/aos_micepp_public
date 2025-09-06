@@ -15,7 +15,7 @@ import { PageHeaderComponent } from '../../../components/shared/page-header/page
 import { RequestService } from '../../../services/request.service';
 import { DemandeService, DemandeRequest } from '../../../services/demande.service';
 import { AuthService } from '../../../services/auth.service';
-import { Service, RequestPriority, ServiceRequest } from '../../../models/request.model';
+import { Service, ServiceRequest } from '../../../models/request.model';
 
 
 @Component({
@@ -850,9 +850,7 @@ export class NewRequestComponent implements OnInit {
         description: this.requestForm.value.description,
         title: `Demande pour ${this.selectedService.name}`,
         userId: this.authService.getCurrentUser()?.id || '',
-        priority: RequestPriority.MEDIUM,
-
-      serviceData: this.getServiceData()
+        serviceData: this.getServiceData()
     };
 
       this.requestService.createRequest(request, this.attachedDocuments).subscribe({
