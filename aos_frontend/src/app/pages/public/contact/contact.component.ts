@@ -90,8 +90,8 @@ import { ContactService, ContactRequest } from '../../../services/contact.servic
 
                 <mat-form-field class="full-width">
                   <mat-label>Message</mat-label>
-                  <textarea matInput formControlName="Message" rows="6" required></textarea>
-                  <mat-error *ngIf="contactForm.get('Message')?.hasError('required')">
+                  <textarea matInput formControlName="message" rows="6" required></textarea>
+                  <mat-error *ngIf="contactForm.get('message')?.hasError('required')">
                     Le message est requis
                   </mat-error>
                 </mat-form-field>
@@ -325,7 +325,7 @@ export class ContactComponent {
         email: this.contactForm.get('email')?.value,
         telephone: this.contactForm.get('telephone')?.value || '',
         sujet: this.contactForm.get('sujet')?.value,
-        message: this.contactForm.get('Message')?.value
+        message: this.contactForm.get('message')?.value
       };
 
       // Envoyer les données via le service
