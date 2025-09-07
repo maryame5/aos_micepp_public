@@ -1,4 +1,5 @@
 package com.example.aos_backend.security;
+
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,15 +23,16 @@ import com.example.aos_backend.Repository.UtilisateurRepository;
 import com.example.aos_backend.Service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 @EnableMethodSecurity(securedEnabled = true, prePostEnabled = true)
 public class SecurityConfig {
-    private final JwtFilter jwtAuthFilter ;
-    private final UserDetailsServiceImpl userDetailsService ;
+    private final JwtFilter jwtAuthFilter;
+    private final UserDetailsServiceImpl userDetailsService;
     private final UtilisateurRepository utilisateurRepository;
-    
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -44,16 +46,15 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> utilisateurRepository.findByEmail(username)
-            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
-    
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(req ->
-                req.requestMatchers(
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(req -> req.requestMatchers(
                         "/auth/**",
                         "/api-docs/**",
                         "/v3/api-docs/**",
@@ -67,15 +68,15 @@ public class SecurityConfig {
                         "/api/services",
                         "/api/services/**",
                         "/api/test",
-                        "/api/test/**"
-                    ).permitAll()
-                    
-                    .anyRequest().authenticated()
-            )
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                        "/api/test/**",
+                        "/contacts"
+
+                ).permitAll()
+
+                        .anyRequest().authenticated())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -100,6 +101,4 @@ public class SecurityConfig {
         return authProvider;
     }
 
-    }
-
-    
+}

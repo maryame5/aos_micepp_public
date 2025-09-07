@@ -1,15 +1,13 @@
 package com.example.aos_backend.user;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+
 import java.util.List;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
@@ -23,7 +21,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "demande")
-@ToString(exclude = { "documentsJustificatifs", "documentsReponse" })
+@ToString(exclude = { "documentsJustificatifs", "documentReponse" })
 public class Demande {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -10,8 +10,6 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.*;
-import lombok.experimental.*;
-
 
 @Getter
 @Setter
@@ -20,7 +18,7 @@ import lombok.experimental.*;
 @Builder
 @Entity
 @Table(name = "support")
-public class Support   {
+public class Support {
 
     @Id
     private Integer id;
@@ -29,10 +27,9 @@ public class Support   {
     @MapsId
     @JoinColumn(name = "id")
     private Utilisateur utilisateur;
-    
-@OneToMany(mappedBy = "publishedBySupport")
-private List<DocumentPublic> documentsPublics;
 
+    @OneToMany(mappedBy = "publishedBySupport")
+    private List<DocumentPublic> documentsPublics;
 
     public void addDocumentPublic(DocumentPublic document) {
         documentsPublics.add(document);

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PageHeaderComponent } from '../../../components/shared/page-header/page-header.component';
+import { ContactService, ContactRequest } from '../../../services/contact.service';
 
 @Component({
   selector: 'app-contact',
@@ -38,24 +39,24 @@ import { PageHeaderComponent } from '../../../components/shared/page-header/page
             <mat-card-content>
               <form [formGroup]="contactForm" (ngSubmit)="onSubmit()" class="contact-form">
                 <div class="form-row">
-                  <mat-form-field  class="half-width">
+                  <mat-form-field class="half-width">
                     <mat-label>Nom</mat-label>
-                    <input matInput formControlName="lastName" required>
-                    <mat-error *ngIf="contactForm.get('lastName')?.hasError('required')">
+                    <input matInput formControlName="nom" required>
+                    <mat-error *ngIf="contactForm.get('nom')?.hasError('required')">
                       Le nom est requis
                     </mat-error>
                   </mat-form-field>
                   
-                  <mat-form-field  class="half-width">
+                  <mat-form-field class="half-width">
                     <mat-label>Prénom</mat-label>
-                    <input matInput formControlName="firstName" required>
-                    <mat-error *ngIf="contactForm.get('firstName')?.hasError('required')">
+                    <input matInput formControlName="prenom" required>
+                    <mat-error *ngIf="contactForm.get('prenom')?.hasError('required')">
                       Le prénom est requis
                     </mat-error>
                   </mat-form-field>
                 </div>
 
-                <mat-form-field  class="full-width">
+                <mat-form-field class="full-width">
                   <mat-label>Email</mat-label>
                   <input matInput type="email" formControlName="email" required>
                   <mat-icon matSuffix>email</mat-icon>
@@ -67,30 +68,30 @@ import { PageHeaderComponent } from '../../../components/shared/page-header/page
                   </mat-error>
                 </mat-form-field>
 
-                <mat-form-field  class="full-width">
+                <mat-form-field class="full-width">
                   <mat-label>Téléphone</mat-label>
-                  <input matInput type="tel" formControlName="phone">
+                  <input matInput type="tel" formControlName="telephone">
                   <mat-icon matSuffix>phone</mat-icon>
                 </mat-form-field>
 
-                <mat-form-field  class="full-width">
+                <mat-form-field class="full-width">
                   <mat-label>Sujet</mat-label>
-                  <mat-select formControlName="subject" required>
+                  <mat-select formControlName="sujet" required>
                     <mat-option value="information">Demande d'information</mat-option>
                     <mat-option value="support">Support technique</mat-option>
                     <mat-option value="complaint">Réclamation</mat-option>
                     <mat-option value="suggestion">Suggestion</mat-option>
                     <mat-option value="other">Autre</mat-option>
                   </mat-select>
-                  <mat-error *ngIf="contactForm.get('subject')?.hasError('required')">
+                  <mat-error *ngIf="contactForm.get('sujet')?.hasError('required')">
                     Le sujet est requis
                   </mat-error>
                 </mat-form-field>
 
-                <mat-form-field  class="full-width">
+                <mat-form-field class="full-width">
                   <mat-label>Message</mat-label>
-                  <textarea matInput formControlName="message" rows="6" required></textarea>
-                  <mat-error *ngIf="contactForm.get('message')?.hasError('required')">
+                  <textarea matInput formControlName="Message" rows="6" required></textarea>
+                  <mat-error *ngIf="contactForm.get('Message')?.hasError('required')">
                     Le message est requis
                   </mat-error>
                 </mat-form-field>
@@ -135,7 +136,7 @@ import { PageHeaderComponent } from '../../../components/shared/page-header/page
                   <mat-icon>email</mat-icon>
                   <div class="contact-details">
                     <h4>Email</h4>
-                    <p>contact aos-micepp.ma</p>
+                    <p>contact@aos-micepp.ma</p>
                   </div>
                 </div>
 
@@ -278,6 +279,10 @@ import { PageHeaderComponent } from '../../../components/shared/page-header/page
 export class ContactComponent {
   contactForm: FormGroup;
   isSubmitting = false;
+  
+  private fb = inject(FormBuilder);
+  private snackBar = inject(MatSnackBar);
+  private contactService = inject(ContactService);
 
   faqs = [
     {
@@ -298,16 +303,13 @@ export class ContactComponent {
     }
   ];
 
-  constructor(
-    private fb: FormBuilder,
-    private snackBar: MatSnackBar
-  ) {
+  constructor() {
     this.contactForm = this.fb.group({
-      firstName: ['', Validators.required],
-      lastName: ['', Validators.required],
+      nom: ['', Validators.required],
+      prenom: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      phone: [''],
-      subject: ['', Validators.required],
+      telephone: [''],
+      sujet: ['', Validators.required],
       message: ['', Validators.required]
     });
   }
@@ -316,15 +318,43 @@ export class ContactComponent {
     if (this.contactForm.valid && !this.isSubmitting) {
       this.isSubmitting = true;
 
-      // Simulate form submission
-      setTimeout(() => {
-        this.isSubmitting = false;
-        this.snackBar.open('Message envoyé avec succès! Nous vous répondrons dans les plus brefs délais.', 'Fermer', {
-          duration: 5000,
-          panelClass: ['success-snackbar']
-        });
-        this.contactForm.reset();
-      }, 2000);
+      // Préparer les données à envoyer
+      const contactData: ContactRequest = {
+        nom: this.contactForm.get('nom')?.value,
+        prenom: this.contactForm.get('prenom')?.value,
+        email: this.contactForm.get('email')?.value,
+        telephone: this.contactForm.get('telephone')?.value || '',
+        sujet: this.contactForm.get('sujet')?.value,
+        message: this.contactForm.get('Message')?.value
+      };
+
+      // Envoyer les données via le service
+      this.contactService.sendMessage(contactData).subscribe({
+        next: (response) => {
+          this.isSubmitting = false;
+          this.snackBar.open('Message envoyé avec succès! Nous vous répondrons dans les plus brefs délais.', 'Fermer', {
+            duration: 5000,
+            panelClass: ['success-snackbar']
+          });
+          this.contactForm.reset();
+        },
+        error: (error) => {
+          this.isSubmitting = false;
+          console.error('Erreur lors de l\'envoi du message:', error);
+          
+          let errorMessage = 'Une erreur est survenue lors de l\'envoi du message.';
+          if (error.status === 400) {
+            errorMessage = 'Données invalides. Vérifiez les champs requis.';
+          } else if (error.status === 500) {
+            errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
+          }
+          
+          this.snackBar.open(errorMessage, 'Fermer', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+        }
+      });
     }
   }
 }
