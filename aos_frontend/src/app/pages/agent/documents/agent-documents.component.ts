@@ -1,3 +1,4 @@
+// agent-documents.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -7,21 +8,12 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { PageHeaderComponent } from '../../../components/shared/page-header/page-header.component';
 import { LoadingComponent } from '../../../components/shared/loading/loading.component';
-import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-
-interface Document {
-  id: string;
-  name: string;
-  type: string;
-  category: string;
-  size: number;
-  downloadUrl: string;
-  uploadedAt: Date;
-  description?: string;
-}
+import { DocumentService, DocumentDTO } from '../../../services/document.service';
 
 @Component({
   selector: 'app-agent-documents',
@@ -35,21 +27,16 @@ interface Document {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatSnackBarModule,
+    MatTooltipModule,
     PageHeaderComponent,
     LoadingComponent
   ],
- 
   template: `
     <div class="documents-container">
       <app-page-header 
         title="Mes Documents" 
-        subtitle="Consultez et téléchargez vos documents">
-        <div slot="actions">
-          <button mat-raised-button color="primary" (click)="uploadDocument()">
-            <mat-icon>cloud_upload</mat-icon>
-            Téléverser un document
-          </button>
-        </div>
+        subtitle="Consultez et téléchargez tous vos documents liés à vos demandes">
       </app-page-header>
 
       <app-loading *ngIf="isLoading"></app-loading>
@@ -58,52 +45,79 @@ interface Document {
         <!-- Filters -->
         <mat-card class="filters-card">
           <div class="filters-container">
-            <mat-form-field >
+            <mat-form-field>
               <mat-label>Rechercher</mat-label>
               <input matInput [(ngModel)]="searchTerm" (input)="applyFilters()" placeholder="Nom du document...">
               <mat-icon matSuffix>search</mat-icon>
             </mat-form-field>
 
-            <mat-form-field >
-              <mat-label>Catégorie</mat-label>
-              <mat-select [(value)]="selectedCategory" (selectionChange)="applyFilters()">
-                <mat-option value="">Toutes les catégories</mat-option>
-                <mat-option value="Attestations">Attestations</mat-option>
-                <mat-option value="Justificatifs">Justificatifs</mat-option>
-                <mat-option value="Formulaires">Formulaires</mat-option>
-                <mat-option value="Certificats">Certificats</mat-option>
-                <mat-option value="Autres">Autres</mat-option>
-              </mat-select>
-            </mat-form-field>
 
-            <mat-form-field >
+            <mat-form-field>
               <mat-label>Type de fichier</mat-label>
               <mat-select [(value)]="selectedType" (selectionChange)="applyFilters()">
                 <mat-option value="">Tous les types</mat-option>
-                <mat-option value="PDF">PDF</mat-option>
-                <mat-option value="DOC">Word</mat-option>
-                <mat-option value="JPG">Image</mat-option>
-                <mat-option value="ZIP">Archive</mat-option>
+                <mat-option *ngFor="let type of availableTypes" [value]="type">
+                  {{ type }}
+                </mat-option>
               </mat-select>
             </mat-form-field>
 
-            <button mat-icon-button (click)="clearFilters()" title="Effacer les filtres">
+            <mat-form-field>
+              <mat-label>Source</mat-label>
+              <mat-select [(value)]="selectedSourceType" (selectionChange)="applyFilters()">
+                <mat-option value="">Toutes les sources</mat-option>
+                <mat-option value="JUSTIFICATIF">Documents envoyés</mat-option>
+                <mat-option value="REPONSE">Documents reçus</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <button mat-icon-button (click)="clearFilters()" matTooltip="Effacer les filtres">
               <mat-icon>clear</mat-icon>
             </button>
           </div>
         </mat-card>
 
+        <!-- Statistics -->
+        <div class="stats-container" *ngIf="documents.length > 0">
+          <mat-card class="stat-card">
+            <mat-icon>description</mat-icon>
+            <div class="stat-info">
+              <span class="stat-number">{{ documents.length }}</span>
+              <span class="stat-label">Total Documents</span>
+            </div>
+          </mat-card>
+          <mat-card class="stat-card">
+            <mat-icon>cloud_upload</mat-icon>
+            <div class="stat-info">
+              <span class="stat-number">{{ getDocumentsBySourceType('JUSTIFICATIF').length }}</span>
+              <span class="stat-label">Documents envoyés</span>
+            </div>
+          </mat-card>
+          <mat-card class="stat-card">
+            <mat-icon>cloud_download</mat-icon>
+            <div class="stat-info">
+              <span class="stat-number">{{ getDocumentsBySourceType('REPONSE').length }}</span>
+              <span class="stat-label">Documents reçus</span>
+            </div>
+          </mat-card>
+        </div>
+
         <!-- Documents Grid -->
         <div class="documents-grid" *ngIf="filteredDocuments.length > 0; else noDocuments">
           <mat-card class="document-card" *ngFor="let document of filteredDocuments">
-            <div class="document-icon">
-              <mat-icon [class]="getFileIconClass(document.type)">
-                {{ getFileIcon(document.type) }}
-              </mat-icon>
+            <div class="document-header">
+              <div class="document-icon">
+                <mat-icon [class]="getFileIconClass(document.type)">
+                  {{ getFileIcon(document.type) }}
+                </mat-icon>
+              </div>
+              <div class="document-source-badge" [class]="getSourceBadgeClass(document.sourceType)">
+                {{ getSourceTypeLabel(document.sourceType) }}
+              </div>
             </div>
             
             <mat-card-header>
-              <mat-card-title>{{ document.name }}</mat-card-title>
+              <mat-card-title matTooltip="{{ document.name }}">{{ document.name }}</mat-card-title>
               <mat-card-subtitle>{{ document.category }}</mat-card-subtitle>
             </mat-card-header>
 
@@ -114,6 +128,16 @@ interface Document {
               
               <div class="document-meta">
                 <div class="meta-item">
+                  <mat-icon>business</mat-icon>
+                  <span>{{ document.demandeReference }}</span>
+                </div>
+                <div class="meta-item">
+                  <mat-icon>info</mat-icon>
+                  <span class="statut-badge" [class]="getStatutClass(document.statutDemande)">
+                    {{ getStatutLabel(document.statutDemande) }}
+                  </span>
+                </div>
+                <div class="meta-item">
                   <mat-icon>insert_drive_file</mat-icon>
                   <span>{{ document.type }}</span>
                 </div>
@@ -123,7 +147,7 @@ interface Document {
                 </div>
                 <div class="meta-item">
                   <mat-icon>event</mat-icon>
-                  <span>{{ document.uploadedAt | date:'dd/MM/yyyy' }}</span>
+                  <span>{{ document.uploadedAt | date:'dd/MM/yyyy HH:mm' }}</span>
                 </div>
               </div>
             </mat-card-content>
@@ -133,12 +157,9 @@ interface Document {
                 <mat-icon>download</mat-icon>
                 Télécharger
               </button>
-              <button mat-button (click)="viewDocument(document)">
+              <button mat-button (click)="previewDocument(document)" *ngIf="canPreview(document)">
                 <mat-icon>visibility</mat-icon>
                 Aperçu
-              </button>
-              <button mat-icon-button (click)="shareDocument(document)" title="Partager">
-                <mat-icon>share</mat-icon>
               </button>
             </mat-card-actions>
           </mat-card>
@@ -148,13 +169,8 @@ interface Document {
           <mat-card class="empty-state-card">
             <div class="empty-state">
               <mat-icon class="empty-icon">description</mat-icon>
-              <h3>Aucun document trouvé</h3>
-              <p *ngIf="hasActiveFilters()">Essayez de modifier vos critères de recherche</p>
-              <p *ngIf="!hasActiveFilters()">Vous n'avez pas encore de documents</p>
-              <button mat-raised-button color="primary" (click)="uploadDocument()">
-                <mat-icon>cloud_upload</mat-icon>
-                Téléverser mon premier document
-              </button>
+              <h3>{{ getEmptyStateTitle() }}</h3>
+              <p>{{ getEmptyStateMessage() }}</p>
             </div>
           </mat-card>
         </ng-template>
@@ -189,12 +205,52 @@ interface Document {
     }
 
     .filters-container mat-form-field {
-      min-width: 200px;
+      min-width: 180px;
+    }
+
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .stat-card mat-icon {
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .stat-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-number {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      opacity: 0.9;
     }
 
     .documents-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
       gap: 1.5rem;
     }
 
@@ -205,6 +261,7 @@ interface Document {
       transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
+      padding-bottom: 4rem;
     }
 
     .document-card:hover {
@@ -212,10 +269,28 @@ interface Document {
       transform: translateY(-2px);
     }
 
-    .document-icon {
+    .document-card mat-card-actions {
       position: absolute;
-      top: 1rem;
-      right: 1rem;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 1rem;
+      border-top: 1px solid rgba(0, 0, 0, 0.12);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    .document-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 1rem 1rem 0 1rem;
+      position: relative;
+    }
+
+    .document-icon {
       width: 3rem;
       height: 3rem;
       border-radius: 50%;
@@ -232,30 +307,37 @@ interface Document {
       height: 1.5rem;
     }
 
-    .file-pdf {
-      color: #dc2626;
+    .document-source-badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
     }
 
-    .file-doc {
-      color: #2563eb;
+    .badge-justificatif {
+      background-color: #e3f2fd;
+      color: #1976d2;
     }
 
-    .file-image {
-      color: #059669;
+    .badge-reponse {
+      background-color: #e8f5e8;
+      color: #2e7d32;
     }
 
-    .file-archive {
-      color: #7c3aed;
-    }
-
-    .file-default {
-      color: #6b7280;
-    }
+    .file-pdf { color: #dc2626; }
+    .file-doc { color: #2563eb; }
+    .file-image { color: #059669; }
+    .file-archive { color: #7c3aed; }
+    .file-default { color: #6b7280; }
 
     .document-description {
       color: #6b7280;
       font-size: 0.875rem;
       margin-bottom: 1rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .document-meta {
@@ -277,6 +359,18 @@ interface Document {
       width: 1rem;
       height: 1rem;
     }
+
+    .statut-badge {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .statut-en-attente { background-color: #fff3cd; color: #856404; }
+    .statut-en-cours { background-color: #cce5ff; color: #0066cc; }
+    .statut-acceptee { background-color: #d4edda; color: #155724; }
+    .statut-refusee { background-color: #f8d7da; color: #721c24; }
 
     .empty-state-card {
       border-radius: 12px;
@@ -326,97 +420,110 @@ interface Document {
         grid-template-columns: 1fr;
         gap: 1rem;
       }
+
+      .stats-container {
+        grid-template-columns: 1fr;
+      }
+
+      .document-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
+      }
     }
   `]
 })
 export class AgentDocumentsComponent implements OnInit {
-  documents: Document[] = [];
-  filteredDocuments: Document[] = [];
+  documents: DocumentDTO[] = [];
+  filteredDocuments: DocumentDTO[] = [];
+  availableCategories: string[] = [];
+  availableTypes: string[] = [];
   isLoading = true;
   searchTerm = '';
-  selectedCategory = '';
+
   selectedType = '';
+  selectedSourceType = '';
 
-  // Mock data
-  private mockDocuments: Document[] = [
-    {
-      id: '1',
-      name: 'Attestation de travail 2024',
-      type: 'PDF',
-      category: 'Attestations',
-      size: 245760,
-      downloadUrl: '/documents/attestation-travail-2024.pdf',
-      uploadedAt: new Date(2024, 0, 15),
-      description: 'Attestation de travail pour l\'année 2024'
-    },
-    {
-      id: '2',
-      name: 'Certificat médical',
-      type: 'PDF',
-      category: 'Justificatifs',
-      size: 156432,
-      downloadUrl: '/documents/certificat-medical.pdf',
-      uploadedAt: new Date(2024, 0, 10),
-      description: 'Certificat médical pour congé maladie'
-    },
-    {
-      id: '3',
-      name: 'Formulaire de demande de congé',
-      type: 'DOC',
-      category: 'Formulaires',
-      size: 89123,
-      downloadUrl: '/documents/formulaire-conge.doc',
-      uploadedAt: new Date(2024, 0, 8),
-      description: 'Formulaire vierge pour demande de congé'
-    },
-    {
-      id: '4',
-      name: 'Facture médicale',
-      type: 'JPG',
-      category: 'Justificatifs',
-      size: 1234567,
-      downloadUrl: '/documents/facture-medicale.jpg',
-      uploadedAt: new Date(2024, 0, 5),
-      description: 'Facture pour remboursement médical'
-    }
-  ];
-
-  constructor() {}
+  constructor(
+    private documentService: DocumentService,
+    private snackBar: MatSnackBar
+  ) {}
 
   ngOnInit(): void {
     this.loadDocuments();
+    this.loadCategories();
+    this.loadTypes();
   }
 
   loadDocuments(): void {
-    // Simulate API call
-    setTimeout(() => {
-      this.documents = this.mockDocuments;
-      this.applyFilters();
-      this.isLoading = false;
-    }, 1000);
+    this.isLoading = true;
+    this.documentService.getUserDocuments().subscribe({
+      next: (documents) => {
+        this.documents = documents;
+        this.applyFilters();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading documents:', error);
+        this.snackBar.open('Erreur lors du chargement des documents', 'Fermer', {
+          duration: 3000,
+          panelClass: ['error-snackbar']
+        });
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadCategories(): void {
+    this.documentService.getDocumentCategories().subscribe({
+      next: (categories) => {
+        this.availableCategories = categories;
+      },
+      error: (error) => {
+        console.error('Error loading categories:', error);
+      }
+    });
+  }
+
+  loadTypes(): void {
+    this.documentService.getDocumentTypes().subscribe({
+      next: (types) => {
+        this.availableTypes = types;
+      },
+      error: (error) => {
+        console.error('Error loading types:', error);
+      }
+    });
   }
 
   applyFilters(): void {
     this.filteredDocuments = this.documents.filter(document => {
       const matchesSearch = !this.searchTerm || 
-        document.name.toLowerCase().includes(this.searchTerm.toLowerCase());
+        document.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        document.description?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        document.demandeReference?.toLowerCase().includes(this.searchTerm.toLowerCase());
       
-      const matchesCategory = !this.selectedCategory || document.category === this.selectedCategory;
-      const matchesType = !this.selectedType || document.type === this.selectedType;
+        const matchesType = !this.selectedType || document.type === this.selectedType;
+      const matchesSourceType = !this.selectedSourceType || document.sourceType === this.selectedSourceType;
       
-      return matchesSearch && matchesCategory && matchesType;
+      return matchesSearch  && matchesType && matchesSourceType;
     });
   }
 
   clearFilters(): void {
     this.searchTerm = '';
-    this.selectedCategory = '';
+  
     this.selectedType = '';
+    this.selectedSourceType = '';
     this.applyFilters();
   }
 
   hasActiveFilters(): boolean {
-    return !!this.searchTerm || !!this.selectedCategory || !!this.selectedType;
+    return !!this.searchTerm  || !!this.selectedType || !!this.selectedSourceType;
+  }
+
+  getDocumentsBySourceType(sourceType: string): DocumentDTO[] {
+    return this.documents.filter(doc => doc.sourceType === sourceType);
   }
 
   getFileIcon(type: string): string {
@@ -447,6 +554,34 @@ export class AgentDocumentsComponent implements OnInit {
     return classes[type.toUpperCase()] || 'file-default';
   }
 
+  getSourceBadgeClass(sourceType: string): string {
+    return sourceType === 'JUSTIFICATIF' ? 'badge-justificatif' : 'badge-reponse';
+  }
+
+  getSourceTypeLabel(sourceType: string): string {
+    return sourceType === 'JUSTIFICATIF' ? 'Envoyé' : 'Reçu';
+  }
+
+  getStatutClass(statut: string): string {
+    const classes: Record<string, string> = {
+      'EN_ATTENTE': 'statut-en-attente',
+      'EN_COURS': 'statut-en-cours',
+      'ACCEPTEE': 'statut-acceptee',
+      'REFUSEE': 'statut-refusee'
+    };
+    return classes[statut] || 'statut-en-attente';
+  }
+
+  getStatutLabel(statut: string): string {
+    const labels: Record<string, string> = {
+      'EN_ATTENTE': 'En attente',
+      'EN_COURS': 'En cours',
+      'ACCEPTEE': 'Acceptée',
+      'REFUSEE': 'Refusée'
+    };
+    return labels[statut] || statut;
+  }
+
   formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -455,23 +590,65 @@ export class AgentDocumentsComponent implements OnInit {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  downloadDocument(document: Document): void {
-    console.log('Download document:', document.name);
-    // Implement download logic
+  canPreview(document: DocumentDTO): boolean {
+    const previewableTypes = ['PDF', 'JPG', 'JPEG', 'PNG'];
+    return previewableTypes.includes(document.type.toUpperCase());
   }
 
-  viewDocument(document: Document): void {
-    console.log('View document:', document.name);
-    // Implement view logic
+  downloadDocument(doc: DocumentDTO): void {
+    this.documentService.downloadDocument(doc.id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = doc.name;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        
+        this.snackBar.open('Téléchargement démarré', 'Fermer', {
+          duration: 2000,
+          panelClass: ['success-snackbar']
+        });
+      },
+      error: (error) => {
+        console.error('Error downloading document:', error);
+        this.snackBar.open('Erreur lors du téléchargement', 'Fermer', {
+          duration: 3000,
+          panelClass: ['error-snackbar']
+        });
+      }
+    });
   }
 
-  shareDocument(document: Document): void {
-    console.log('Share document:', document.name);
-    // Implement share logic
+  previewDocument(document: DocumentDTO): void {
+    if (this.canPreview(document)) {
+      this.documentService.previewDocument(document.id).subscribe({
+        next: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          window.open(url, '_blank');
+        },
+        error: (error) => {
+          console.error('Error previewing document:', error);
+          this.snackBar.open('Erreur lors de l\'aperçu', 'Fermer', {
+            duration: 3000,
+            panelClass: ['error-snackbar']
+          });
+        }
+      });
+    }
   }
 
-  uploadDocument(): void {
-    console.log('Upload new document');
-    // Implement upload logic
+  getEmptyStateTitle(): string {
+    if (this.hasActiveFilters()) {
+      return 'Aucun document trouvé';
+    }
+    return 'Aucun document disponible';
+  }
+
+  getEmptyStateMessage(): string {
+    if (this.hasActiveFilters()) {
+      return 'Essayez de modifier vos critères de recherche ou effacez les filtres.';
+    }
+    return 'Vos documents apparaîtront ici une fois que vous aurez créé des demandes de services.';
   }
 }

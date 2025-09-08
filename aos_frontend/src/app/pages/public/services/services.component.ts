@@ -5,14 +5,16 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { PageHeaderComponent } from '../../../components/shared/page-header/page-header.component';
+import { ServiceDetailDialogComponent } from '../../../components/shared/service-detail-dialog/service-detail-dialog.component';
 import { ServiceInfoService, ServiceInfo } from '../../../services/service-info.service';
 
 
 @Component({
   selector: 'app-services',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, PageHeaderComponent, RouterModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatDialogModule, PageHeaderComponent, RouterModule],
   template: `
     <div class="services-page">
       <app-page-header title="Nos Services" subtitle="Découvrez tous les services disponibles" [showActions]="false"></app-page-header>
@@ -45,9 +47,9 @@ import { ServiceInfoService, ServiceInfo } from '../../../services/service-info.
                 <li *ngFor="let feature of service.features">{{ feature }}</li>
               </ul>
             </mat-card-content>
-            <mat-card-actions>
+            <mat-card-actions class="fixed-actions">
               <button mat-raised-button color="primary" routerLink="/agent/new-request">Faire une demande</button>
-              <button mat-button routerLink="/agent/requests/{{service.id}}">En savoir plus</button>
+              <button mat-button (click)="openServiceDetail(service)">En savoir plus</button>
             </mat-card-actions>
           </mat-card>
         </div>
@@ -113,11 +115,18 @@ import { ServiceInfoService, ServiceInfo } from '../../../services/service-info.
       border: none;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      min-height: 400px;
     }
 
     .service-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    mat-card-content {
+      flex: 1;
     }
 
     .service-icon {
@@ -148,6 +157,14 @@ import { ServiceInfoService, ServiceInfo } from '../../../services/service-info.
       margin: 0.5rem 0;
       color: #64748b;
     }
+
+    .fixed-actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: auto;
+      padding: 1rem 0;
+    }
   `]
 })
 export class ServicesComponent implements OnInit {
@@ -157,7 +174,7 @@ export class ServicesComponent implements OnInit {
 
   constructor(
     private serviceInfoService: ServiceInfoService,
-   
+    private dialog: MatDialog
   ) { }
 
   ngOnInit(): void {
@@ -180,6 +197,13 @@ export class ServicesComponent implements OnInit {
         this.loading = false;
         console.error('Error loading services:', error);
       }
+    });
+  }
+
+  openServiceDetail(service: ServiceInfo): void {
+    this.dialog.open(ServiceDetailDialogComponent, {
+      data: service,
+      width: '400px'
     });
   }
 }

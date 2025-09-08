@@ -7,7 +7,6 @@ import { ServiceRequest, RequestStatus,  Service, Document } from '../models/req
 import { environment } from '../../environments/environment';
 import { DemandeService, Demande, DemandeRequest, DocumentJustificatif } from './demande.service';
 import { BackendServiceService, BackendService } from './backend-service.service';
-import { FileUploadService } from './file-upload.service';
 
 @Injectable({
   providedIn: 'root'
@@ -19,8 +18,7 @@ export class RequestService {
     private http: HttpClient,
     private demandeService: DemandeService,
     private backendServiceService: BackendServiceService,
-    private fileUploadService: FileUploadService
-  ) {}
+      ) {}
 
  
 
