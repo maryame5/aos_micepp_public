@@ -1,12 +1,12 @@
 -- Insert service info data
-INSERT INTO service_info (icon, title, description) VALUES 
+INSERT INTO service_info (icon, title, description) VALUES
 ('directions_bus', 'Service de Transport', 'Assistance pour les déplacements et frais de transport des employés'),
 ('local_hospital', 'Santé Sociale', 'Prise en charge des frais médicaux et de santé'),
 ('home', 'Logement', 'Aide au logement et participation aux frais d''habitation'),
 ('child_care', 'Colonies de Vacances', 'Organisation de colonies de vacances pour les enfants des employés'),
 ('school', 'Appui Scolaire', 'Soutien scolaire et aide aux frais d''éducation'),
 ('sports', 'Activités Culturelles et Sportives', 'Organisation d''activités culturelles et sportives')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (title) DO NOTHING;
 
 -- Insert service features
 INSERT INTO service_features (service_info_id, feature) VALUES
@@ -36,7 +36,7 @@ INSERT INTO service_features (service_info_id, feature) VALUES
 ON CONFLICT DO NOTHING;
 
 -- Insert services with IDs
-INSERT INTO service (nom, type, service_info_id, is_active) VALUES 
+INSERT INTO service (nom, type, service_info_id, is_active) VALUES
 ('Transport Quotidien', 'TransportService', 1, TRUE),
 ('Assistance Médicale', 'SanteSocialeService', 2, TRUE),
 ('Aide au Logement', 'LogementService', 3, TRUE),
