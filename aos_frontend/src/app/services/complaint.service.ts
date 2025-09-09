@@ -17,14 +17,17 @@ export interface ReclamationResponse {
   statut: string;
   dateSoumission: string;
   lastModifiedDate?: string;
-  utilisateur?: any; // Add if needed
+  utilisateur?: any;
+  assignedTo?: any;
+  commentaire?: string;
 }
 
 export enum StatutReclamation {
   EN_ATTENTE = 'EN_ATTENTE',
+  AFFECTEE = 'AFFECTEE',
   EN_COURS = 'EN_COURS',
   RESOLUE = 'RESOLUE',
-  FERMEE = 'FERMEE'
+  CLOTUREE = 'CLOTUREE'
 }
 
 @Injectable({
@@ -200,9 +203,10 @@ export class ComplaintService {
   formatStatus(status: StatutReclamation): string {
     const statusMap = {
       [StatutReclamation.EN_ATTENTE]: 'En attente',
+      [StatutReclamation.AFFECTEE]: 'Affectée',
       [StatutReclamation.EN_COURS]: 'En cours de traitement',
       [StatutReclamation.RESOLUE]: 'Résolue',
-      [StatutReclamation.FERMEE]: 'Fermée'
+      [StatutReclamation.CLOTUREE]: 'Clôturée'
     };
 
     return statusMap[status] || status;
@@ -211,9 +215,10 @@ export class ComplaintService {
   getStatusColor(status: StatutReclamation): string {
     const colorMap = {
       [StatutReclamation.EN_ATTENTE]: 'status-pending',
+      [StatutReclamation.AFFECTEE]: 'status-assigned',
       [StatutReclamation.EN_COURS]: 'status-in-progress',
       [StatutReclamation.RESOLUE]: 'status-resolved',
-      [StatutReclamation.FERMEE]: 'status-closed'
+      [StatutReclamation.CLOTUREE]: 'status-closed'
     };
 
     return colorMap[status] || 'status-default';

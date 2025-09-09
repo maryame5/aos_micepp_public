@@ -4,7 +4,9 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,6 +30,7 @@ public class ComplaintController {
     private final ComplaintService complaintService;
 
     @PostMapping("/ajouter")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<String> ajouterReclamation(@RequestBody ReclamationRequest request) {
         try {
             // Add validation
@@ -65,10 +68,25 @@ public class ComplaintController {
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<Reclamation>> getAllReclamations() {
         try {
             List<Reclamation> reclamations = complaintService.getReclamationByUser();
             return ResponseEntity.ok(reclamations);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception e) {
+            e.printStackTrace(); // Add logging
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Reclamation> getReclamationById(@PathVariable Long id) {
+        try {
+            Reclamation reclamation = complaintService.getReclamationById(id);
+            return ResponseEntity.ok(reclamation);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
