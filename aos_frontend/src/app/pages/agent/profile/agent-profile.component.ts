@@ -1,9 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -17,10 +14,7 @@ import { User } from '../../../models/user.model';
   standalone: true,
   imports: [
     CommonModule,
-    ReactiveFormsModule,
     MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
     MatButtonModule,
     MatIconModule,
     MatTabsModule,
@@ -50,69 +44,36 @@ import { User } from '../../../models/user.model';
                 </mat-card-header>
 
                 <mat-card-content>
-                  <form [formGroup]="profileForm" (ngSubmit)="updateProfile()" class="profile-form">
-                    <div class="form-row">
-                      <mat-form-field  class="half-width">
-                        <mat-label>Prénom</mat-label>
-                        <input matInput formControlName="firstName" required>
-                        <mat-error *ngIf="profileForm.get('firstName')?.hasError('required')">
-                          Le prénom est requis
-                        </mat-error>
-                      </mat-form-field>
-
-                      <mat-form-field  class="half-width">
-                        <mat-label>Nom</mat-label>
-                        <input matInput formControlName="lastName" required>
-                        <mat-error *ngIf="profileForm.get('lastName')?.hasError('required')">
-                          Le nom est requis
-                        </mat-error>
-                      </mat-form-field>
+                  <div class="profile-info-grid">
+                    <div class="info-item">
+                      <label>Prénom</label>
+                      <span>{{ currentUser.firstName }}</span>
                     </div>
-
-                    <mat-form-field  class="full-width">
-                      <mat-label>Email</mat-label>
-                      <input matInput type="email" formControlName="email" required>
-                      <mat-icon matSuffix>email</mat-icon>
-                      <mat-error *ngIf="profileForm.get('email')?.hasError('required')">
-                        L'email est requis
-                      </mat-error>
-                      <mat-error *ngIf="profileForm.get('email')?.hasError('email')">
-                        Format d'email invalide
-                      </mat-error>
-                    </mat-form-field>
-
-                    <mat-form-field  class="full-width">
-                      <mat-label>Téléphone</mat-label>
-                      <input matInput type="tel" formControlName="phoneNumber">
-                      <mat-icon matSuffix>phone</mat-icon>
-                    </mat-form-field>
-
-                    <mat-form-field  class="full-width">
-                      <mat-label>Adresse</mat-label>
-                      <textarea matInput formControlName="address" rows="3"></textarea>
-                      <mat-icon matSuffix>location_on</mat-icon>
-                    </mat-form-field>
-
-                    <mat-form-field  class="full-width">
-                      <mat-label>Département</mat-label>
-                      <input matInput formControlName="department" readonly>
-                      <mat-icon matSuffix>business</mat-icon>
-                    </mat-form-field>
-
-                    <div class="form-actions">
-                      <button 
-                        mat-raised-button 
-                        color="primary" 
-                        type="submit"
-                        [disabled]="profileForm.invalid || isUpdatingProfile">
-                        <mat-icon *ngIf="isUpdatingProfile">hourglass_empty</mat-icon>
-                        {{ isUpdatingProfile ? 'Mise à jour...' : 'Mettre à jour' }}
-                      </button>
-                      <button mat-button type="button" (click)="resetForm()">
-                        Annuler
-                      </button>
+                    <div class="info-item">
+                      <label>Nom</label>
+                      <span>{{ currentUser.lastName }}</span>
                     </div>
-                  </form>
+                    <div class="info-item">
+                      <label>Email</label>
+                      <span>{{ currentUser.email }}</span>
+                    </div>
+                    <div class="info-item">
+                      <label>Téléphone</label>
+                      <span>{{ currentUser.phoneNumber || 'Non spécifié' }}</span>
+                    </div>
+                    <div class="info-item">
+                      <label>Département</label>
+                      <span>{{ currentUser.department || 'Non spécifié' }}</span>
+                    </div>
+                    <div class="info-item">
+                      <label>Rôle</label>
+                      <span>{{ getRoleLabel(currentUser.role) }}</span>
+                    </div>
+                    <div class="info-item">
+                      <label>Statut</label>
+                      <span class="status-active">{{ getAccountStatus() }}</span>
+                    </div>
+                  </div>
                 </mat-card-content>
               </mat-card>
             </div>
@@ -123,62 +84,27 @@ import { User } from '../../../models/user.model';
             <div class="tab-content">
               <mat-card class="security-card">
                 <mat-card-header>
-                  <mat-card-title>Changer le mot de passe</mat-card-title>
-                  <mat-card-subtitle>Modifiez votre mot de passe pour sécuriser votre compte</mat-card-subtitle>
+                  <mat-card-title>Réinitialisation du mot de passe</mat-card-title>
+                  <mat-card-subtitle>Si vous avez oublié votre mot de passe, contactez l'administrateur</mat-card-subtitle>
                 </mat-card-header>
 
                 <mat-card-content>
-                  <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="password-form">
-                    <mat-form-field  class="full-width">
-                      <mat-label>Mot de passe actuel</mat-label>
-                      <input matInput [type]="hideCurrentPassword ? 'password' : 'text'" formControlName="currentPassword" required>
-                      <button mat-icon-button matSuffix (click)="hideCurrentPassword = !hideCurrentPassword" type="button">
-                        <mat-icon>{{ hideCurrentPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
-                      </button>
-                      <mat-error *ngIf="passwordForm.get('currentPassword')?.hasError('required')">
-                        Le mot de passe actuel est requis
-                      </mat-error>
-                    </mat-form-field>
+                  <p class="security-description">
+                    Pour des raisons de sécurité, vous ne pouvez pas modifier votre mot de passe directement.
+                    Si vous avez oublié votre mot de passe, cliquez sur le bouton ci-dessous pour notifier l'administrateur.
+                  </p>
 
-                    <mat-form-field  class="full-width">
-                      <mat-label>Nouveau mot de passe</mat-label>
-                      <input matInput [type]="hideNewPassword ? 'password' : 'text'" formControlName="newPassword" required>
-                      <button mat-icon-button matSuffix (click)="hideNewPassword = !hideNewPassword" type="button">
-                        <mat-icon>{{ hideNewPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
-                      </button>
-                      <mat-error *ngIf="passwordForm.get('newPassword')?.hasError('required')">
-                        Le nouveau mot de passe est requis
-                      </mat-error>
-                      <mat-error *ngIf="passwordForm.get('newPassword')?.hasError('minlength')">
-                        Le mot de passe doit contenir au moins 8 caractères
-                      </mat-error>
-                    </mat-form-field>
-
-                    <mat-form-field  class="full-width">
-                      <mat-label>Confirmer le nouveau mot de passe</mat-label>
-                      <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword" required>
-                      <button mat-icon-button matSuffix (click)="hideConfirmPassword = !hideConfirmPassword" type="button">
-                        <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
-                      </button>
-                      <mat-error *ngIf="passwordForm.get('confirmPassword')?.hasError('required')">
-                        La confirmation est requise
-                      </mat-error>
-                      <mat-error *ngIf="passwordForm.hasError('passwordMismatch')">
-                        Les mots de passe ne correspondent pas
-                      </mat-error>
-                    </mat-form-field>
-
-                    <div class="form-actions">
-                      <button 
-                        mat-raised-button 
-                        color="primary" 
-                        type="submit"
-                        [disabled]="passwordForm.invalid || isChangingPassword">
-                        <mat-icon *ngIf="isChangingPassword">hourglass_empty</mat-icon>
-                        {{ isChangingPassword ? 'Modification...' : 'Changer le mot de passe' }}
-                      </button>
-                    </div>
-                  </form>
+                  <div class="form-actions">
+                    <button
+                      mat-raised-button
+                      color="primary"
+                      type="button"
+                      (click)="requestPasswordReset()"
+                      [disabled]="isRequestingReset">
+                      <mat-icon *ngIf="isRequestingReset">hourglass_empty</mat-icon>
+                      {{ isRequestingReset ? 'Envoi en cours...' : 'Notifier l\'administrateur' }}
+                    </button>
+                  </div>
                 </mat-card-content>
               </mat-card>
 
@@ -190,13 +116,16 @@ import { User } from '../../../models/user.model';
                   <div class="account-info-grid">
                     <div class="info-item">
                       <label>Statut du compte</label>
-                      <span class="status-active">Actif</span>
+                      <span class="status-active">{{ currentUser.isActive ? 'Actif' : 'Inactif' }}</span>
                     </div>
                     <div class="info-item">
                       <label>Rôle</label>
                       <span>{{ getRoleLabel(currentUser.role) }}</span>
                     </div>
-                    
+                    <div class="info-item">
+                      <label>Dernière connexion</label>
+                      <span>{{ currentUser.lastLogin ? (currentUser.lastLogin | date:'short') : 'Jamais' }}</span>
+                    </div>
                   </div>
                 </mat-card-content>
               </mat-card>
@@ -244,6 +173,20 @@ import { User } from '../../../models/user.model';
     .profile-header-info {
       display: flex;
       flex-direction: column;
+    }
+
+    .profile-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .security-description {
+      color: #6b7280;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
     }
 
     .profile-form,
@@ -327,86 +270,32 @@ import { User } from '../../../models/user.model';
 })
 export class AgentProfileComponent implements OnInit {
   currentUser: User | null = null;
-  profileForm: FormGroup;
-  passwordForm: FormGroup;
-  isUpdatingProfile = false;
-  isChangingPassword = false;
-  hideCurrentPassword = true;
-  hideNewPassword = true;
-  hideConfirmPassword = true;
+  isRequestingReset = false;
 
   constructor(
-    private fb: FormBuilder,
     private authService: AuthService,
     private snackBar: MatSnackBar
-  ) {
-    this.profileForm = this.fb.group({
-      firstName: ['', Validators.required],
-      lastName: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
-      phoneNumber: [''],
-      address: [''],
-      department: ['']
-    });
-
-    this.passwordForm = this.fb.group({
-      currentPassword: ['', Validators.required],
-      newPassword: ['', [Validators.required, Validators.minLength(8)]],
-      confirmPassword: ['', Validators.required]
-    }, { validators: this.passwordMatchValidator });
-  }
+  ) {}
 
   ngOnInit(): void {
     this.currentUser = this.authService.getCurrentUser();
-    if (this.currentUser) {
-      this.profileForm.patchValue({
-        email: this.currentUser.email
-      });
-    }
   }
 
-  passwordMatchValidator(form: FormGroup) {
-    const newPassword = form.get('newPassword');
-    const confirmPassword = form.get('confirmPassword');
-    
-    if (newPassword && confirmPassword && newPassword.value !== confirmPassword.value) {
-      return { passwordMismatch: true };
-    }
-    return null;
-  }
+  requestPasswordReset(): void {
+    if (!this.isRequestingReset && this.currentUser) {
+      this.isRequestingReset = true;
 
-  updateProfile(): void {
-    if (this.profileForm.valid && !this.isUpdatingProfile) {
-      this.isUpdatingProfile = true;
-
-      // Simulate API call
-      setTimeout(() => {
-        this.isUpdatingProfile = false;
-        this.snackBar.open('Profil mis à jour avec succès', 'Fermer', {
-          duration: 3000,
-          panelClass: ['success-snackbar']
-        });
-      }, 1500);
-    }
-  }
-
-  changePassword(): void {
-    if (this.passwordForm.valid && !this.isChangingPassword) {
-      this.isChangingPassword = true;
-      const formValue = this.passwordForm.value;
-
-      this.authService.changePassword(formValue).subscribe({
-        next: () => {
-          this.isChangingPassword = false;
-          this.snackBar.open('Mot de passe modifié avec succès', 'Fermer', {
-            duration: 3000,
+      this.authService.resetPassword(this.currentUser.email).subscribe({
+        next: (message: string) => {
+          this.isRequestingReset = false;
+          this.snackBar.open(message, 'Fermer', {
+            duration: 5000,
             panelClass: ['success-snackbar']
           });
-          this.passwordForm.reset();
         },
         error: (error) => {
-          this.isChangingPassword = false;
-          this.snackBar.open('Erreur lors de la modification du mot de passe', 'Fermer', {
+          this.isRequestingReset = false;
+          this.snackBar.open('Erreur lors de l\'envoi de la demande', 'Fermer', {
             duration: 5000,
             panelClass: ['error-snackbar']
           });
@@ -415,12 +304,9 @@ export class AgentProfileComponent implements OnInit {
     }
   }
 
-  resetForm(): void {
-    if (this.currentUser) {
-      this.profileForm.patchValue({
-        email: this.currentUser.email
-      });
-    }
+  getAccountStatus(): string {
+    const mustChangePassword = localStorage.getItem('mustChangePassword') === 'true';
+    return mustChangePassword ? 'Mot de passe temporaire' : 'Actif';
   }
 
   getRoleLabel(role: string): string {

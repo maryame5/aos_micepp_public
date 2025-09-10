@@ -29,7 +29,11 @@ export class AuthService {
         token: response.token,
         userType: response.userType as UserRole,
         email: response.email,
-        mustChangePassword: response.mustChangePassword
+        mustChangePassword: response.mustChangePassword,
+        phoneNumber: response.phoneNumber,
+        department: response.department,
+        isActive: response.isActive
+        
       }) as LoginResponse),
       tap((response: LoginResponse) => {
         const user: User = {
@@ -40,8 +44,9 @@ export class AuthService {
           role: response.userType,
           createdAt: new Date(),
           updatedAt: new Date(),
-          department: 'N/A',
-          isActive: false
+          phoneNumber: response.phoneNumber,
+          department: response.department,
+          isActive: response.isActive ?? true
         };
         localStorage.setItem(this.TOKEN_KEY, response.token);
         localStorage.setItem(this.USER_KEY, JSON.stringify(user));

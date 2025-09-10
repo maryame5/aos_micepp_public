@@ -35,8 +35,7 @@ public class AuthService {
     public Map<String, Object> authenticate(String email, String password) {
         // Authenticate user
         Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(email, password)
-        );
+                new UsernamePasswordAuthenticationToken(email, password));
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // Generate JWT token
@@ -46,11 +45,11 @@ public class AuthService {
         // Save token
         Utilisateur user = getUserByEmail(email);
         Token token = Token.builder()
-            .token(jwtToken)
-            .createdAt(LocalDateTime.now())
-            .expiresAt(LocalDateTime.now().plusHours(24))
-            .utilisateur(user)
-            .build();
+                .token(jwtToken)
+                .createdAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusHours(24))
+                .utilisateur(user)
+                .build();
         tokenRepository.save(token);
 
         // Build response
@@ -58,21 +57,25 @@ public class AuthService {
         response.put("token", jwtToken);
         response.put("userT", getUserType(email));
         response.put("userType", user.getAuthorities().stream()
-            .map(GrantedAuthority::getAuthority)
-            .findFirst()
-            .orElse("UNKNOWN"));
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .orElse("UNKNOWN"));
         response.put("email", email);
         response.put("mustChangePassword", isUsingTemporaryPassword(email));
         response.put("userId", user.getId());
         response.put("FirstName", user.getLastname());
         response.put("LastName", user.getFirstname());
+        response.put("phoneNumber", user.getPhone());
+        response.put("department", user.getDepartment());
+        response.put("isActive", user.isEnabled());
+        response.put("user", user);
 
         return response;
     }
 
     public Utilisateur getUserByEmail(String email) {
         return userRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
     }
 
     private boolean isUsingTemporaryPassword(String email) {

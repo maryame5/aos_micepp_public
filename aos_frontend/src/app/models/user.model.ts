@@ -33,6 +33,9 @@ export interface LoginResponse {
   userType: UserRole;
   email: string;
   mustChangePassword: boolean;
+  phoneNumber?: string;
+  department?: string;
+  isActive?: boolean;
 }
 export interface Userr {
   email: string;

@@ -80,6 +80,9 @@ public class Utilisateur implements UserDetails, Principal {
     @JsonIgnore
     private List<Reclamation> reclamations;
 
+    @Column(name = "department")
+    private String department;
+
     @Override
     public String getUsername() {
         return email;
