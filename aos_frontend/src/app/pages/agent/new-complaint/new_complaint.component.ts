@@ -90,7 +90,7 @@ interface ReclamationRequest {
                 <mat-icon>info</mat-icon>
                 <div class="info-text">
                   <strong>Information importante :</strong>
-                  <p>Votre réclamation sera traitée dans les meilleurs délais. Un accusé de réception vous sera envoyé par email.</p>
+                  <p>Votre réclamation sera traitée dans les meilleurs délais. </p>
                   <p>Statut initial : <strong>En attente</strong></p>
                 </div>
               </div>

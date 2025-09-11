@@ -231,10 +231,12 @@ export class ComplaintDetailComponent implements OnInit {
   }
 
   loadComplaint(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
+    const idParam = this.route.snapshot.paramMap.get('id');
+    const id = idParam ? Number(idParam) : NaN;
+
+    if (!idParam || isNaN(id) || id <= 0) {
       this.hasError = true;
-      this.errorMessage = 'ID de réclamation manquant';
+      this.errorMessage = 'ID de réclamation invalide';
       this.isLoading = false;
       return;
     }
@@ -243,7 +245,7 @@ export class ComplaintDetailComponent implements OnInit {
     this.hasError = false;
     this.errorMessage = '';
 
-    this.complaintService.getComplaintById(+id).subscribe({
+    this.complaintService.getComplaintById(id).subscribe({
       next: (complaint: ReclamationResponse) => {
         this.complaint = complaint;
         this.isLoading = false;

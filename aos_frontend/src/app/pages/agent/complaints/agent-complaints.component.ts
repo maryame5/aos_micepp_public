@@ -579,6 +579,6 @@ export class AgentComplaintsComponent implements OnInit {
 
   viewComplaint(id: number): void {
     // Navigate to complaint detail - you'll need to implement this route
-    this.router.navigate(['/agent/Reclamation', id]);
+    this.router.navigate(['/agent/Reclamation/details', id]);
   }
 }

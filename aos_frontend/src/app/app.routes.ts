@@ -22,6 +22,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/public/news/news.component').then(m => m.NewsComponent)
       },
       {
+        path: 'news/details/:id',
+        loadComponent: () => import('./pages/public/news/detail/new-detail.component').then(m => m.NewsDetailComponent)
+      },
+      {
         path: 'contact',
         loadComponent: () => import('./pages/public/contact/contact.component').then(m => m.ContactComponent)
       }
@@ -78,7 +82,7 @@ export const routes: Routes = [
         data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },
       {
-        path: 'Reclamation/:id',
+        path: 'Reclamation/details/:id',
         loadComponent: () => import('./pages/agent/complaints/complaint-detail/complaint-detail.component').then(m => m.ComplaintDetailComponent),
         data: { roles: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPPORT] }
       },

@@ -80,6 +80,10 @@ public class Utilisateur implements UserDetails, Principal {
     @JsonIgnore
     private List<Reclamation> reclamations;
 
+    @OneToMany(mappedBy = "publishedBy")
+    @JsonIgnore
+    private List<DocumentPublic> publishedDocuments;
+
     @Column(name = "department")
     private String department;
 

@@ -69,7 +69,8 @@ public class SecurityConfig {
                         "/api/services/**",
                         "/api/test",
                         "/api/test/**",
-                        "/contacts"
+                        "/contacts",
+                        "/documents/public/**"
 
                 ).permitAll()
 

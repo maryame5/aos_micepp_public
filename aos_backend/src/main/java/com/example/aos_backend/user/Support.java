@@ -28,14 +28,4 @@ public class Support {
     @JoinColumn(name = "id")
     private Utilisateur utilisateur;
 
-    @OneToMany(mappedBy = "publishedBySupport")
-    private List<DocumentPublic> documentsPublics;
-
-    public void addDocumentPublic(DocumentPublic document) {
-        documentsPublics.add(document);
-    }
-
-    public void removeDocumentPublic(DocumentPublic document) {
-        documentsPublics.remove(document);
-    }
 }

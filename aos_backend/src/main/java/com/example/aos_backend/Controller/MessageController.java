@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.aos_backend.Service.MessageService;
 import com.example.aos_backend.dto.ContactRequest;
-import com.example.aos_backend.dto.ReclamationRequest;
 import com.example.aos_backend.user.MessageContact;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,7 +29,7 @@ public class MessageController {
 
             MessageContact message = messageService.sendMessage(request);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body("Contact added successfully");
+            return ResponseEntity.status(HttpStatus.CREATED).body("Message sended successfully");
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request: " + e.getMessage());

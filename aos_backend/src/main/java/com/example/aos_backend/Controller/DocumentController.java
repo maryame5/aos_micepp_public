@@ -21,7 +21,6 @@ import com.example.aos_backend.Service.DocumentService;
 import com.example.aos_backend.Util.DocumentUtil;
 import com.example.aos_backend.dto.DocumentDTO;
 import com.example.aos_backend.user.DocumentJustificatif;
-import com.example.aos_backend.user.Utilisateur;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

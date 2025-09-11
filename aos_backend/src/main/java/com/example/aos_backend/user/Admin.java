@@ -33,7 +33,4 @@ public class Admin {
     @JoinColumn(name = "id")
     private Utilisateur utilisateur;
 
-    @OneToMany(mappedBy = "publishedBy")
-    private List<DocumentPublic> publishedDocuments;
-
 }

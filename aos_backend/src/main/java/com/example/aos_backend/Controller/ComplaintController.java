@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/Reclamation")
-@CrossOrigin(origins = "*") // Add CORS support
+@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Tag(name = "Reclamation", description = "Operations related to complaints")
 public class ComplaintController {
@@ -76,12 +76,12 @@ public class ComplaintController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
-            e.printStackTrace(); // Add logging
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/details/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Reclamation> getReclamationById(@PathVariable Long id) {
         try {
@@ -90,7 +90,7 @@ public class ComplaintController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
-            e.printStackTrace(); // Add logging
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

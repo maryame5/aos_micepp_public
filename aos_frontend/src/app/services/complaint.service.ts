@@ -54,14 +54,9 @@ export class ComplaintService {
 
   createComplaint(request: ReclamationRequest): Observable<any> {
     const headers = this.getAuthHeaders();
-
-    console.log('Sending complaint request to:', `${this.apiUrl}/ajouter`);
-    console.log('Request payload:', request);
-    console.log('Headers:', headers);
-
-    return this.http.post(`${this.apiUrl}/ajouter`, request, { 
+   return this.http.post(`${this.apiUrl}/ajouter`, request, { 
       headers,
-      responseType: 'text' // Since your backend returns a string response
+      responseType: 'text' 
     }).pipe(
       tap(response => {
         console.log('Complaint creation response:', response);
@@ -103,7 +98,7 @@ export class ComplaintService {
   getComplaintById(id: number): Observable<ReclamationResponse> {
     const headers = this.getAuthHeaders();
 
-    return this.http.get<ReclamationResponse>(`${this.apiUrl}/${id}`, { headers }).pipe(
+    return this.http.get<ReclamationResponse>(`${this.apiUrl}/details/${id}`, { headers }).pipe(
       tap(response => {
         console.log('Complaint retrieved by ID:', response);
       }),
