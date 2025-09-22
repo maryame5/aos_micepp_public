@@ -80,22 +80,22 @@ import { DocumentService, DocumentDTO } from '../../../services/document.service
         <!-- Statistics -->
         <div class="stats-container" *ngIf="documents.length > 0">
           <mat-card class="stat-card">
-            <mat-icon>description</mat-icon>
             <div class="stat-info">
+              <mat-icon>description</mat-icon>
               <span class="stat-number">{{ documents.length }}</span>
               <span class="stat-label">Total Documents</span>
             </div>
           </mat-card>
           <mat-card class="stat-card">
-            <mat-icon>cloud_upload</mat-icon>
             <div class="stat-info">
+              <mat-icon>cloud_upload</mat-icon>
               <span class="stat-number">{{ getDocumentsBySourceType('JUSTIFICATIF').length }}</span>
               <span class="stat-label">Documents envoyés</span>
             </div>
           </mat-card>
           <mat-card class="stat-card">
-            <mat-icon>cloud_download</mat-icon>
             <div class="stat-info">
+              <mat-icon>cloud_download</mat-icon>
               <span class="stat-number">{{ getDocumentsBySourceType('REPONSE').length }}</span>
               <span class="stat-label">Documents reçus</span>
             </div>
@@ -216,9 +216,6 @@ import { DocumentService, DocumentDTO } from '../../../services/document.service
     }
 
     .stat-card {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
       padding: 1.5rem;
       border-radius: 12px;
       border: none;
@@ -227,15 +224,18 @@ import { DocumentService, DocumentDTO } from '../../../services/document.service
       color: white;
     }
 
-    .stat-card mat-icon {
+    .stat-info {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .stat-info mat-icon {
       font-size: 2rem;
       width: 2rem;
       height: 2rem;
-    }
-
-    .stat-info {
-      display: flex;
-      flex-direction: column;
+      flex-shrink: 0;
     }
 
     .stat-number {

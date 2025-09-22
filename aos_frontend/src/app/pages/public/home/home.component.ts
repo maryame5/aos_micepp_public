@@ -248,8 +248,9 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
           <div>
             <h3 class="text-blue-200 font-bold text-lg mb-4">AOS MICEPP</h3>
             <p class="text-gray-200 text-sm leading-relaxed">
-              Association des Œuvres Sociales du Ministère de l'Intérieur, des Collectivités Territoriales 
-              et de l'Équipement, de la Politique de la Ville et du Patrimoine.
+              Association Sociale du Ministère de l'Investissement, 
+                de la Convergence et de l'Évaluation des Politiques Publiques (AOS MICEPP).
+              Nous sommes dédiés à l'amélioration du bien-être des agents du ministère et de leurs familles.
             </p>
           </div>
           

@@ -106,6 +106,10 @@ export const routes: Routes = [
         path: 'services',
         loadComponent: () => import('./pages/public/services/services.component').then(m => m.ServicesComponent)
       },
+      {
+        path: 'news',
+        loadComponent: () => import('./pages/public/news/news.component').then(m => m.NewsComponent)
+      },
 
       {
         path: 'settings',
