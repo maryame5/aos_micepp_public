@@ -102,8 +102,9 @@ import { User } from '../../../models/user.model';
                       (click)="requestPasswordReset()"
                       [disabled]="isRequestingReset">
                       <mat-icon *ngIf="isRequestingReset">hourglass_empty</mat-icon>
-                      {{ isRequestingReset ? 'Envoi en cours...' : 'Notifier l\'administrateur' }}
+                      Notifier l'administrateur
                     </button>
+
                   </div>
                 </mat-card-content>
               </mat-card>

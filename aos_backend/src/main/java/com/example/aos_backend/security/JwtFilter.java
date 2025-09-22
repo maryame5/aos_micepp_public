@@ -32,6 +32,24 @@ public class JwtFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
+        // Skip token validation for public endpoints
+        String requestURI = request.getRequestURI();
+        if (requestURI.startsWith("/documents/public/") ||
+                requestURI.startsWith("/auth/") ||
+                requestURI.startsWith("/api-docs/") ||
+                requestURI.startsWith("/v3/api-docs/") ||
+                requestURI.startsWith("/swagger-resources") ||
+                requestURI.startsWith("/configuration/") ||
+                requestURI.startsWith("/swagger-ui/") ||
+                requestURI.startsWith("/webjars/") ||
+                requestURI.equals("/swagger-ui.html") ||
+                requestURI.startsWith("/api/services") ||
+                requestURI.startsWith("/api/test") ||
+                requestURI.equals("/contacts")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             final String authHeader = request.getHeader("Authorization");
             final String jwt;

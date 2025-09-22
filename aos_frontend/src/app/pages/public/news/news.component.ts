@@ -6,22 +6,32 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { PageHeaderComponent } from '../../../components/shared/page-header/page-header.component';
 import { NewsService, DocumentPublicDTO } from '../../../services/news.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { environment } from '../../../../environments/environment';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-news',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    MatSelectModule,
+    MatFormFieldModule,
+    MatInputModule,
     PageHeaderComponent
   ],
   template: `
@@ -31,6 +41,68 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
         subtitle="Restez informé de nos dernières nouvelles" 
         [showActions]="false">
       </app-page-header>
+      
+      <!-- Filters section -->
+      <div class="filters-section" *ngIf="!isLoading && !error && articles.length > 0">
+        <div class="filters-content">
+          <div class="search-filter">
+            <mat-form-field  class="search-field">
+              <mat-label>Rechercher</mat-label>
+              <input matInput 
+                     [(ngModel)]="searchTerm" 
+                     (input)="applyFilters()"
+                     placeholder="Titre, contenu ou auteur...">
+              <mat-icon matSuffix>search</mat-icon>
+            </mat-form-field>
+          </div>
+          
+          <div class="type-filters">
+            <mat-form-field  class="type-select">
+              <mat-label>Type</mat-label>
+              <mat-select [(ngModel)]="selectedType" (selectionChange)="applyFilters()">
+                <mat-option value="">Tous les types</mat-option>
+                <mat-option value="news">Actualités</mat-option>
+                <mat-option value="article">Articles</mat-option>
+                <mat-option value="document">Documents</mat-option>
+                <mat-option value="announcement">Annonces</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="sort-filter">
+            <mat-form-field  class="sort-select">
+              <mat-label>Trier par</mat-label>
+              <mat-select [(ngModel)]="sortBy" (selectionChange)="applySorting()">
+                <mat-option value="date-desc">Plus récent</mat-option>
+                <mat-option value="date-asc">Plus ancien</mat-option>
+                <mat-option value="title-asc">Titre A-Z</mat-option>
+                <mat-option value="title-desc">Titre Z-A</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="filter-actions">
+            <button mat-icon-button (click)="clearFilters()" 
+                    matTooltip="Effacer les filtres"
+                    class="clear-filters-btn">
+              <mat-icon>clear</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter indicators -->
+        <div class="filter-indicators" *ngIf="hasActiveFilters()">
+          <span class="filter-count">{{ filteredArticles.length }} résultat(s) sur {{ articles.length }}</span>
+          <mat-chip *ngIf="searchTerm" (removed)="clearSearch()" class="filter-chip">
+            Recherche: "{{ searchTerm }}"
+            <mat-icon matChipRemove>cancel</mat-icon>
+          </mat-chip>
+          <mat-chip *ngIf="selectedType" (removed)="clearTypeFilter()" class="filter-chip">
+            Type: {{ getTypeLabel(selectedType) }}
+            <mat-icon matChipRemove>cancel</mat-icon>
+          </mat-chip>
+        </div>
+      </div>
       
       <div class="news-content">
         <!-- Loading state -->
@@ -61,19 +133,42 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
           </div>
         </div>
 
+        <!-- No results after filtering -->
+        <div class="no-results-container" *ngIf="!isLoading && !error && articles.length > 0 && filteredArticles.length === 0">
+          <div class="no-results-content">
+            <mat-icon class="no-results-icon">search_off</mat-icon>
+            <h3 class="no-results-title">Aucun résultat trouvé</h3>
+            <p class="no-results-message">Essayez de modifier vos critères de recherche.</p>
+            <button mat-button (click)="clearFilters()" class="clear-all-btn">
+              <mat-icon>clear_all</mat-icon>
+              Effacer tous les filtres
+            </button>
+          </div>
+        </div>
+
         <!-- Articles grid -->
-        <div class="news-grid" *ngIf="!isLoading && !error && articles.length > 0">
-          <article class="news-card-wrapper" *ngFor="let article of articles; trackBy: trackByArticleId">
+        <div class="news-grid" *ngIf="!isLoading && !error && filteredArticles.length > 0">
+          <article class="news-card-wrapper" *ngFor="let article of filteredArticles; trackBy: trackByArticleId">
             <mat-card class="news-card">
-              <!-- Article image placeholder or file type indicator -->
+              <!-- Compact image container -->
               <div class="news-image-container">
-                <div class="news-image-placeholder" >
-                  <div class="icon-wrapper">
+                <div class="news-image-placeholder" 
+                     [class.has-image]="hasImageFile(article)">
+                  <!-- Show actual image if it's an image file -->
+                  <div class="image-wrapper" *ngIf="hasImageFile(article)">
+                    <img [src]="getImageUrl(article)" 
+                         [alt]="article.titre"
+                         class="news-image"
+                         (error)="onImageError($event)"
+                         loading="lazy">
+                    <div class="image-overlay"></div>
+                  </div>
+                  <!-- Show icon if not an image -->
+                  <div class="icon-wrapper" *ngIf="!hasImageFile(article)">
                     <mat-icon class="file-type-icon">{{ getFileTypeIcon(article.type) }}</mat-icon>
                   </div>
                   <div class="overlay-gradient"></div>
                 </div>
-              
                 
                 <!-- Type chip overlay -->
                 <div class="type-chip-overlay">
@@ -87,17 +182,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
               <div class="card-content">
                 <mat-card-header class="custom-header">
                   <mat-card-title class="article-title">{{ article.titre }}</mat-card-title>
-                  <mat-card-subtitle class="article-meta">
-                    <span class="meta-item">
-                      <mat-icon class="meta-icon">schedule</mat-icon>
-                      {{ formatDate(article.createdDate) }}
-                    </span>
-                    <span class="meta-separator">•</span>
-                    <span class="meta-item">
-                      <mat-icon class="meta-icon">person</mat-icon>
-                      {{ article.publishedByName }}
-                    </span>
-                  </mat-card-subtitle>
                 </mat-card-header>
 
                 <mat-card-content class="article-content">
@@ -105,13 +189,29 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
                   <div class="article-excerpt" [innerHTML]="getExcerpt(article.description)"></div>
                 </mat-card-content>
 
+                <!-- Footer with meta info and actions -->
                 <mat-card-actions class="card-actions">
-                  <div class="primary-actions">
-                    <button mat-raised-button color="primary" (click)="viewArticleDetails(article)" class="read-more-btn">
-                      <mat-icon>chevron_right</mat-icon>
-                      Lire la suite
-                    </button>
+                  <div class="card-footer">
+                    <div class="article-meta">
+                      <span class="meta-item">
+                        <mat-icon class="meta-icon">schedule</mat-icon>
+                        {{ formatDate(article.createdDate) }}
+                      </span>
+                      <span class="meta-separator">•</span>
+                      <span class="meta-item">
+                        <mat-icon class="meta-icon">person</mat-icon>
+                        {{ article.publishedByName }}
+                      </span>
+                    </div>
+                    
+                    <div class="primary-actions">
+                      <button mat-raised-button color="primary" (click)="viewArticleDetails(article)" class="read-more-btn">
+                        Lire la suite
+                        <mat-icon>chevron_right</mat-icon>
+                      </button>
+                    </div>
                   </div>
+                  
                   <div class="secondary-actions">
                     <button 
                       mat-icon-button 
@@ -166,12 +266,67 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       min-height: 100vh;
     }
 
+    /* Filters section */
+    .filters-section {
+      background: var(--surface-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-light);
+      padding: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .filters-content {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .search-field, .type-select, .sort-select {
+      min-width: 200px;
+    }
+
+    .search-field {
+      min-width: 300px;
+    }
+
+    .clear-filters-btn {
+      color: var(--text-secondary) !important;
+    }
+
+    .clear-filters-btn:hover {
+      color: var(--primary-color) !important;
+      background-color: rgba(25, 118, 210, 0.08) !important;
+    }
+
+    .filter-indicators {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--divider-color);
+      flex-wrap: wrap;
+    }
+
+    .filter-count {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .filter-chip {
+      background-color: rgba(25, 118, 210, 0.1) !important;
+      color: var(--primary-color) !important;
+      border-radius: 16px !important;
+    }
+
     .news-content {
-      margin-top: 2rem;
+      margin-top: 1rem;
     }
 
     /* States communs */
-    .loading-container, .error-container, .empty-container {
+    .loading-container, .error-container, .empty-container, .no-results-container {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -267,6 +422,47 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       line-height: 1.5;
     }
 
+    /* No results state */
+    .no-results-container {
+      background: var(--surface-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-light);
+    }
+
+    .no-results-content {
+      max-width: 400px;
+    }
+
+    .no-results-icon {
+      font-size: 4rem;
+      width: 4rem;
+      height: 4rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+      opacity: 0.7;
+    }
+
+    .no-results-title {
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .no-results-message {
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+
+    .clear-all-btn {
+      color: var(--primary-color) !important;
+      border-radius: var(--border-radius-small) !important;
+    }
+
+    .clear-all-btn mat-icon {
+      margin-right: 0.5rem;
+    }
+
     /* Grid des articles */
     .news-grid {
       display: grid;
@@ -309,9 +505,9 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       z-index: 1;
     }
 
-    /* Image container */
+    /* Compact image container */
     .news-image-container {
-      height: 220px;
+      height: 180px;
       position: relative;
       overflow: hidden;
       background: var(--background-color);
@@ -326,15 +522,19 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       position: relative;
     }
 
+    .news-image-placeholder.has-image {
+      background: none;
+    }
+
     .icon-wrapper {
       z-index: 2;
       position: relative;
     }
 
     .file-type-icon {
-      font-size: 3.5rem;
-      width: 3.5rem;
-      height: 3.5rem;
+      font-size: 3rem;
+      width: 3rem;
+      height: 3rem;
       color: white;
       filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
     }
@@ -351,6 +551,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
     .image-wrapper {
       height: 100%;
       position: relative;
+      width: 100%;
     }
 
     .news-image {
@@ -432,46 +633,21 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
     }
 
     .article-title {
-      font-size: 1.35rem !important;
+      font-size: 1.25rem !important;
       font-weight: 600 !important;
       line-height: 1.4 !important;
-      margin-bottom: 1rem !important;
+      margin-bottom: 0 !important;
       color: var(--text-primary);
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-    }
-
-    .article-meta {
-      display: flex !important;
-      align-items: center !important;
-      gap: 0.5rem !important;
-      color: var(--text-secondary) !important;
-      font-size: 0.875rem !important;
-      flex-wrap: wrap;
-    }
-
-    .meta-item {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-
-    .meta-icon {
-      font-size: 1rem !important;
-      width: 1rem !important;
-      height: 1rem !important;
-    }
-
-    .meta-separator {
-      color: var(--divider-color);
-      font-weight: bold;
+      text-align: center;
     }
 
     /* Article content */
     .article-content {
-      padding: 1rem 1.5rem !important;
+      padding: 1rem 1.5rem 0.5rem 1.5rem !important;
       flex: 1;
     }
 
@@ -482,7 +658,8 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       overflow: hidden;
       line-height: 1.6;
       color: var(--text-secondary);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
+      text-align: left;
     }
 
     .article-excerpt::ng-deep p {
@@ -502,32 +679,67 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
     /* Card actions */
     .card-actions {
-      padding: 1rem 1.5rem 1.5rem 1.5rem !important;
+      padding: 1rem 1.5rem !important;
       display: flex !important;
-      justify-content: space-between !important;
-      align-items: center !important;
+      flex-direction: column !important;
+      gap: 1rem;
       border-top: 1px solid var(--divider-color);
       margin-top: auto;
     }
 
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .article-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .meta-icon {
+      font-size: 0.9rem !important;
+      width: 0.9rem !important;
+      height: 0.9rem !important;
+    }
+
+    .meta-separator {
+      color: var(--divider-color);
+      font-weight: bold;
+    }
+
     .primary-actions {
-      flex: 1;
+      flex-shrink: 0;
     }
 
     .read-more-btn {
       border-radius: var(--border-radius-small) !important;
       font-weight: 500 !important;
       text-transform: none !important;
+      font-size: 0.875rem !important;
     }
 
     .read-more-btn mat-icon {
       margin-left: 0.25rem;
-      font-size: 1.2rem;
+      font-size: 1rem;
     }
 
     .secondary-actions {
       display: flex;
       gap: 0.5rem;
+      justify-content: center;
     }
 
     .action-btn {
@@ -556,8 +768,28 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
     }
 
     /* Responsive design */
+    @media (max-width: 1024px) {
+      .filters-content {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .search-field, .type-select, .sort-select {
+        min-width: unset;
+      }
+
+      .filter-actions {
+        display: flex;
+        justify-content: center;
+      }
+    }
+
     @media (max-width: 768px) {
       .news-page {
+        padding: 1rem;
+      }
+
+      .filters-section {
         padding: 1rem;
       }
 
@@ -571,11 +803,11 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       }
 
       .article-title {
-        font-size: 1.2rem !important;
+        font-size: 1.1rem !important;
       }
 
       .article-meta {
-        font-size: 0.8rem !important;
+        font-size: 0.75rem !important;
       }
 
       .custom-header {
@@ -583,18 +815,26 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       }
 
       .article-content {
-        padding: 0.75rem 1rem !important;
+        padding: 0.75rem 1rem 0.5rem 1rem !important;
       }
 
       .card-actions {
-        padding: 0.75rem 1rem 1rem 1rem !important;
-        flex-direction: column;
-        gap: 1rem;
-        align-items: stretch;
+        padding: 0.75rem 1rem !important;
       }
 
-      .secondary-actions {
+      .card-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+
+      .article-meta {
         justify-content: center;
+        order: 2;
+      }
+
+      .primary-actions {
+        order: 1;
       }
 
       .read-more-btn {
@@ -602,7 +842,12 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
         justify-content: center;
       }
 
-      .loading-container, .error-container, .empty-container {
+      .secondary-actions {
+        order: 3;
+        justify-content: center;
+      }
+
+      .loading-container, .error-container, .empty-container, .no-results-container {
         padding: 2rem 1rem;
         min-height: 300px;
       }
@@ -613,7 +858,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       }
 
       .news-image-container {
-        height: 180px;
+        height: 160px;
       }
     }
 
@@ -622,14 +867,25 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
         padding: 0.5rem;
       }
 
-      .article-excerpt {
-        -webkit-line-clamp: 2;
+      .filters-section {
+        margin: 1rem 0;
+        padding: 0.75rem;
       }
 
-      .error-icon, .empty-icon {
+      .article-excerpt {
+        -webkit-line-clamp: 2;
+        font-size: 0.85rem;
+      }
+
+      .error-icon, .empty-icon, .no-results-icon {
         font-size: 3rem;
         width: 3rem;
         height: 3rem;
+      }
+
+      .filter-indicators {
+        flex-direction: column;
+        align-items: flex-start;
       }
     }
 
@@ -641,7 +897,9 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
     .read-more-btn:focus,
     .action-btn:focus,
-    .retry-btn:focus {
+    .retry-btn:focus,
+    .clear-all-btn:focus,
+    .clear-filters-btn:focus {
       outline: 2px solid var(--primary-color);
       outline-offset: 2px;
     }
@@ -651,10 +909,18 @@ export class NewsComponent implements OnInit {
   private newsService = inject(NewsService);
   private router = inject(Router);
   private sanitizer = inject(DomSanitizer);
+  private apiUrl = `${environment.apiUrl}/documents`;
+  private http: HttpClient = inject(HttpClient);
 
   articles: DocumentPublicDTO[] = [];
+  filteredArticles: DocumentPublicDTO[] = [];
   isLoading = true;
   error: string | null = null;
+
+  // Filter properties
+  searchTerm = '';
+  selectedType = '';
+  sortBy = 'date-desc';
 
   ngOnInit() {
     this.loadArticles();
@@ -670,9 +936,8 @@ export class NewsComponent implements OnInit {
     
     this.newsService.getAllDocuments().subscribe({
       next: (documents) => {
-        this.articles = documents.sort((a, b) => {
-          return new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime();
-        });
+        this.articles = documents;
+        this.applySorting();
         this.isLoading = false;
       },
       error: (error) => {
@@ -681,6 +946,78 @@ export class NewsComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  applyFilters() {
+    let filtered = [...this.articles];
+
+    // Apply search filter
+    if (this.searchTerm.trim()) {
+      const searchLower = this.searchTerm.toLowerCase().trim();
+      filtered = filtered.filter(article =>
+        article.titre.toLowerCase().includes(searchLower) ||
+        article.publishedByName.toLowerCase().includes(searchLower) ||
+        this.getPlainTextExcerpt(article.description).toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply type filter
+    if (this.selectedType) {
+      filtered = filtered.filter(article => article.type === this.selectedType);
+    }
+
+    this.filteredArticles = filtered;
+    this.applySorting();
+  }
+
+  applySorting() {
+    const articles = this.filteredArticles.length > 0 || this.hasActiveFilters() 
+      ? this.filteredArticles 
+      : this.articles;
+
+    const sorted = [...articles];
+
+    switch (this.sortBy) {
+      case 'date-desc':
+        sorted.sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime());
+        break;
+      case 'date-asc':
+        sorted.sort((a, b) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime());
+        break;
+      case 'title-asc':
+        sorted.sort((a, b) => a.titre.localeCompare(b.titre, 'fr'));
+        break;
+      case 'title-desc':
+        sorted.sort((a, b) => b.titre.localeCompare(a.titre, 'fr'));
+        break;
+    }
+
+    if (this.filteredArticles.length > 0 || this.hasActiveFilters()) {
+      this.filteredArticles = sorted;
+    } else {
+      this.filteredArticles = sorted;
+    }
+  }
+
+  hasActiveFilters(): boolean {
+    return !!(this.searchTerm.trim() || this.selectedType);
+  }
+
+  clearFilters() {
+    this.searchTerm = '';
+    this.selectedType = '';
+    this.sortBy = 'date-desc';
+    this.applyFilters();
+  }
+
+  clearSearch() {
+    this.searchTerm = '';
+    this.applyFilters();
+  }
+
+  clearTypeFilter() {
+    this.selectedType = '';
+    this.applyFilters();
   }
 
   viewArticleDetails(article: DocumentPublicDTO) {
@@ -765,7 +1102,7 @@ export class NewsComponent implements OnInit {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = htmlContent;
     const plainText = tempDiv.textContent || tempDiv.innerText || '';
-    const excerpt = plainText.length > 150 ? plainText.substring(0, 150) + '...' : plainText;
+    const excerpt = plainText.length > 120 ? plainText.substring(0, 120) + '...' : plainText;
     
     return this.sanitizer.bypassSecurityTrustHtml(`<p>${excerpt}</p>`);
   }
@@ -786,7 +1123,18 @@ export class NewsComponent implements OnInit {
   }
 
   getImageUrl(article: DocumentPublicDTO): string {
-    return `/api/documents/${article.id}/image`;
+    let imageUrl = '';
+    this.http.get(`${this.apiUrl}/public/${article.id}/image`, {
+      responseType: 'blob'
+    }).subscribe({
+      next: (blob) => {
+        imageUrl = URL.createObjectURL(blob);
+      },
+      error: (error) => {
+        console.error('Error fetching image:', error);
+      }
+    });
+    return imageUrl;
   }
 
   onImageError(event: Event) {
