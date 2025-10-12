@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,13 +21,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.aos_backend.Notification.NotificationService;
 import com.example.aos_backend.Service.DemandeService;
 import com.example.aos_backend.Util.DocumentUtil;
 import com.example.aos_backend.dto.DemandeDTO;
 import com.example.aos_backend.dto.DemandeRequest;
 import com.example.aos_backend.user.Demande;
 import com.example.aos_backend.user.DocumentJustificatif;
+import com.example.aos_backend.user.NotificationType;
 import com.example.aos_backend.user.StatutDemande;
+import com.example.aos_backend.user.Utilisateur;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
@@ -37,6 +41,7 @@ import lombok.RequiredArgsConstructor;
 public class DemandeController {
 
     private final DemandeService demandeService;
+    private final NotificationService notificationService;
 
     @PostMapping(value = "/nouveau_demande", consumes = "multipart/form-data")
     @PreAuthorize("isAuthenticated()")
@@ -45,6 +50,8 @@ public class DemandeController {
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         try {
             Demande demande = demandeService.createDemande(request, files);
+            // Send notification to admins
+            notificationService.notifyAdminNewDemande(demande);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(demande);
         } catch (Exception e) {
